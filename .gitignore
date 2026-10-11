@@ -1,0 +1,17 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Netlify local dev
+.netlify/
+
+# Environment (never commit secrets)
+.env
+.env.local
+.env.*

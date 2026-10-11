@@ -1,0 +1,45 @@
+name: Deploy to Netlify
+
+on:
+  push:
+    branches:
+      - main        # production deploy
+      - staging     # preview deploy
+  pull_request:
+    branches:
+      - main        # PR preview deploy
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate HTML files exist
+        run: |
+          echo "Checking required files..."
+          test -f public/catalog.html || (echo "ERROR: public/catalog.html missing" && exit 1)
+          test -f public/admin.html   || (echo "ERROR: public/admin.html missing" && exit 1)
+          echo "All files present ✓"
+          echo "catalog.html: $(wc -c < public/catalog.html) bytes"
+          echo "admin.html:   $(wc -c < public/admin.html) bytes"
+
+      - name: Deploy to Netlify
+        uses: nwtgck/actions-netlify@v3
+        with:
+          publish-dir: './public'
+          production-branch: main
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          deploy-message: |
+            Deploy from ${{ github.ref_name }} — ${{ github.event.head_commit.message }}
+          enable-pull-request-comment: true
+          enable-commit-comment: true
+          overwrites-pull-request-comment: true
+          alias: ${{ github.ref_name == 'main' && 'production' || github.ref_name }}
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+        timeout-minutes: 5

@@ -1,0 +1,1336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Srijan Sarees Admin</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f0eb; min-height: 100vh; }
+
+  /* MODAL */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.5); z-index: 200;
+    align-items: flex-end; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: white; border-radius: 20px 20px 0 0;
+    width: 100%; max-width: 600px; max-height: 90vh;
+    overflow-y: auto; padding: 24px 20px 40px;
+  }
+  .modal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  .modal-header h2 { font-size: 18px; font-weight: 700; color: #222; }
+  .modal-close {
+    background: #f0ebe6; border: none; border-radius: 50%;
+    width: 32px; height: 32px; font-size: 18px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  /* LOGIN */
+  #login-screen {
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh; padding: 20px;
+  }
+  .login-card {
+    background: white; border-radius: 16px; padding: 40px 32px;
+    width: 100%; max-width: 360px; text-align: center;
+    box-shadow: 0 4px 24px rgba(107,15,43,0.12);
+  }
+  .login-logo { font-size: 32px; margin-bottom: 8px; }
+  .login-card h1 { color: #6B0F2B; font-size: 22px; margin-bottom: 4px; }
+  .login-card p { color: #888; font-size: 14px; margin-bottom: 28px; }
+  .login-card input {
+    width: 100%; padding: 14px 16px; border: 2px solid #e8e0da;
+    border-radius: 10px; font-size: 16px; margin-bottom: 16px;
+    outline: none; transition: border-color 0.2s;
+  }
+  .login-card input:focus { border-color: #6B0F2B; }
+  .login-card button {
+    width: 100%; padding: 14px; background: #6B0F2B; color: white;
+    border: none; border-radius: 10px; font-size: 16px; font-weight: 600;
+    cursor: pointer; transition: background 0.2s;
+  }
+  .login-card button:hover { background: #850f34; }
+  .login-error { color: #c0392b; font-size: 13px; margin-top: 10px; display: none; }
+
+  /* APP */
+  #app { display: none; }
+  .top-bar {
+    background: #6B0F2B; color: white; padding: 16px 20px;
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .top-bar h1 { font-size: 18px; font-weight: 700; }
+  .logout-btn {
+    background: rgba(255,255,255,0.2); border: none; color: white;
+    padding: 6px 14px; border-radius: 20px; font-size: 13px; cursor: pointer;
+  }
+
+  /* TABS */
+  .tabs {
+    display: flex; background: white;
+    border-bottom: 2px solid #e8e0da; overflow-x: auto;
+    position: sticky; top: 57px; z-index: 99;
+  }
+  .tab-btn {
+    flex: 1; min-width: 80px; padding: 14px 8px; border: none;
+    background: none; font-size: 13px; font-weight: 500; color: #888;
+    cursor: pointer; border-bottom: 3px solid transparent;
+    margin-bottom: -2px; white-space: nowrap; transition: all 0.2s;
+  }
+  .tab-btn.active { color: #6B0F2B; border-bottom-color: #6B0F2B; font-weight: 700; }
+
+  /* CONTENT */
+  .tab-content { display: none; padding: 20px; max-width: 600px; margin: 0 auto; }
+  .tab-content.active { display: block; }
+
+  /* FORM STYLES */
+  .form-group { margin-bottom: 18px; }
+  label { display: block; font-size: 13px; font-weight: 600; color: #555; margin-bottom: 6px; }
+  input[type="text"], input[type="number"], input[type="tel"],
+  select, textarea {
+    width: 100%; padding: 13px 14px; border: 2px solid #e8e0da;
+    border-radius: 10px; font-size: 15px; outline: none;
+    transition: border-color 0.2s; background: white;
+    appearance: none;
+  }
+  input:focus, select:focus, textarea:focus { border-color: #6B0F2B; }
+  textarea { resize: vertical; min-height: 80px; }
+
+  /* PHOTO UPLOAD */
+  .photo-upload-area {
+    border: 2px dashed #d4b896; border-radius: 10px; padding: 24px;
+    text-align: center; cursor: pointer; transition: all 0.2s;
+    background: #fdf9f5;
+  }
+  .photo-upload-area:hover { border-color: #6B0F2B; background: #fef5ef; }
+  .photo-upload-area input { display: none; }
+  .photo-preview {
+    width: 100%; max-height: 220px; object-fit: cover;
+    border-radius: 8px; margin-top: 12px; display: none;
+  }
+  .upload-icon { font-size: 32px; margin-bottom: 8px; }
+  .upload-text { color: #888; font-size: 14px; }
+  .upload-text span { color: #6B0F2B; font-weight: 600; }
+
+  /* BUTTONS */
+  .btn-primary {
+    width: 100%; padding: 15px; background: #6B0F2B; color: white;
+    border: none; border-radius: 10px; font-size: 16px; font-weight: 700;
+    cursor: pointer; transition: background 0.2s; margin-top: 8px;
+  }
+  .btn-primary:hover { background: #850f34; }
+  .btn-primary:disabled { background: #c89; cursor: not-allowed; }
+
+  /* TOAST */
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: #222; color: white; padding: 12px 24px;
+    border-radius: 24px; font-size: 14px; z-index: 999;
+    opacity: 0; transition: opacity 0.3s; pointer-events: none;
+  }
+  .toast.show { opacity: 1; }
+  .toast.success { background: #27ae60; }
+  .toast.error { background: #c0392b; }
+
+  /* CARDS */
+  .card {
+    background: white; border-radius: 12px; margin-bottom: 14px;
+    overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    position: relative;
+  }
+  .card.selected { box-shadow: 0 0 0 3px #6B0F2B; }
+  .card-img { width: 100%; height: 180px; object-fit: cover; }
+  .card-img-placeholder {
+    width: 100%; height: 140px; background: #f5ede7;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 40px; color: #d4b896;
+  }
+  .card-body { padding: 14px 16px; }
+  .card-title { font-size: 16px; font-weight: 700; color: #222; margin-bottom: 4px; }
+  .card-meta { font-size: 13px; color: #666; margin-bottom: 10px; }
+  .card-price { font-size: 18px; font-weight: 700; color: #6B0F2B; }
+  .badge {
+    display: inline-block; padding: 3px 10px; border-radius: 20px;
+    font-size: 12px; font-weight: 600; margin-left: 10px;
+  }
+  .badge-available { background: #d5f5e3; color: #27ae60; }
+  .badge-sold { background: #fde8e8; color: #c0392b; }
+
+  .card-actions { display: flex; gap: 8px; margin-top: 12px; }
+  .btn-small {
+    flex: 1; padding: 9px; border: none; border-radius: 8px;
+    font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s;
+  }
+  .btn-sold { background: #fde8e8; color: #c0392b; }
+  .btn-sold:hover { background: #c0392b; color: white; }
+  .btn-avail { background: #d5f5e3; color: #27ae60; }
+  .btn-avail:hover { background: #27ae60; color: white; }
+
+  /* WEAVER CARDS */
+  .weaver-card {
+    background: white; border-radius: 12px; padding: 16px;
+    margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    display: flex; align-items: center; gap: 14px;
+  }
+  .weaver-avatar {
+    width: 50px; height: 50px; border-radius: 50%;
+    background: #6B0F2B; color: white; display: flex;
+    align-items: center; justify-content: center;
+    font-size: 20px; font-weight: 700; flex-shrink: 0;
+  }
+  .weaver-info h3 { font-size: 15px; font-weight: 700; color: #222; }
+  .weaver-info p { font-size: 13px; color: #666; margin-top: 2px; }
+
+  /* LOADING */
+  .loading { text-align: center; padding: 40px; color: #888; font-size: 15px; }
+  .empty { text-align: center; padding: 40px; color: #aaa; font-size: 15px; }
+
+  /* SECTION HEADER */
+  .section-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .section-header h2 { font-size: 18px; font-weight: 700; color: #222; }
+  .count-badge {
+    background: #6B0F2B; color: white; border-radius: 20px;
+    padding: 3px 10px; font-size: 12px; font-weight: 700;
+  }
+
+  .refresh-btn {
+    background: none; border: 2px solid #e8e0da; border-radius: 8px;
+    padding: 6px 12px; font-size: 13px; cursor: pointer; color: #666;
+  }
+  .refresh-btn:hover { border-color: #6B0F2B; color: #6B0F2B; }
+
+  /* ── FILTER PANEL ─────────────────────────── */
+  .filter-panel {
+    background: white; border-radius: 12px; padding: 16px;
+    margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+  .filter-toggle {
+    width: 100%; background: none; border: 2px solid #e8e0da;
+    border-radius: 10px; padding: 11px 14px; font-size: 14px;
+    font-weight: 600; color: #444; cursor: pointer; text-align: left;
+    display: flex; align-items: center; justify-content: space-between;
+    transition: all 0.2s;
+  }
+  .filter-toggle:hover { border-color: #6B0F2B; color: #6B0F2B; }
+  .filter-toggle.open { border-color: #6B0F2B; color: #6B0F2B; }
+  .filter-body { display: none; margin-top: 14px; }
+  .filter-body.open { display: block; }
+  .filter-row { margin-bottom: 14px; }
+  .filter-label { font-size: 12px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+  .chip-group { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip {
+    padding: 6px 12px; border-radius: 20px; font-size: 13px;
+    border: 1.5px solid #e8e0da; background: white; cursor: pointer;
+    transition: all 0.15s; color: #555;
+  }
+  .chip.active { background: #6B0F2B; color: white; border-color: #6B0F2B; }
+  .price-range { display: flex; gap: 10px; align-items: center; }
+  .price-range input {
+    flex: 1; padding: 10px 12px; border: 2px solid #e8e0da;
+    border-radius: 8px; font-size: 14px; width: auto;
+  }
+  .price-range span { color: #aaa; font-size: 13px; flex-shrink: 0; }
+  .color-search input {
+    padding: 10px 12px; border: 2px solid #e8e0da;
+    border-radius: 8px; font-size: 14px; width: 100%;
+  }
+  .filter-actions { display: flex; gap: 8px; margin-top: 14px; }
+  .btn-filter-apply {
+    flex: 2; padding: 10px; background: #6B0F2B; color: white;
+    border: none; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer;
+  }
+  .btn-filter-clear {
+    flex: 1; padding: 10px; background: none; color: #888;
+    border: 2px solid #e8e0da; border-radius: 8px; font-size: 14px; cursor: pointer;
+  }
+
+  /* ── SELECTION BAR ────────────────────────── */
+  .selection-bar {
+    background: #fff8f0; border: 1.5px solid #e8c97a; border-radius: 10px;
+    padding: 12px 14px; margin-bottom: 14px;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 10px;
+  }
+  .selection-bar .sel-info { font-size: 13px; color: #666; }
+  .selection-bar .sel-info strong { color: #6B0F2B; }
+  .sel-actions { display: flex; gap: 8px; flex-shrink: 0; }
+  .btn-sel-all {
+    padding: 6px 12px; border: 1.5px solid #6B0F2B; color: #6B0F2B;
+    background: white; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer;
+  }
+  .btn-sel-clear {
+    padding: 6px 12px; border: 1.5px solid #e8e0da; color: #888;
+    background: white; border-radius: 6px; font-size: 12px; cursor: pointer;
+  }
+
+  /* SAREE SELECT CHECKBOX */
+  .saree-select-wrap {
+    position: absolute; top: 10px; left: 10px; z-index: 10;
+  }
+  .saree-checkbox {
+    width: 24px; height: 24px; border-radius: 6px; border: 2px solid #fff;
+    background: rgba(255,255,255,0.9); cursor: pointer; appearance: none;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.2); transition: all 0.15s;
+  }
+  .saree-checkbox:checked {
+    background: #6B0F2B; border-color: #6B0F2B;
+  }
+  .saree-checkbox:checked::after {
+    content: '✓'; color: white; font-size: 14px; font-weight: 700;
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+  }
+  .saree-checkbox-label {
+    width: 24px; height: 24px; border-radius: 6px; border: 2px solid #fff;
+    background: rgba(255,255,255,0.9); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.2); transition: all 0.15s; font-size: 14px;
+  }
+  .saree-checkbox-label.checked { background: #6B0F2B; border-color: #6B0F2B; color: white; }
+
+  /* CATALOG SECTION */
+  .catalog-section { margin-bottom: 16px; }
+  .catalog-btn-row { display: flex; gap: 8px; margin-bottom: 0; }
+  .btn-catalog-all {
+    flex: 1; background: #6B0F2B; color: white; border: none;
+    border-radius: 10px; padding: 13px; font-size: 14px; font-weight: 700;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .btn-catalog-sel {
+    flex: 1; background: white; color: #6B0F2B; border: 2px solid #6B0F2B;
+    border-radius: 10px; padding: 13px; font-size: 14px; font-weight: 700;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .btn-catalog-sel:disabled { opacity: 0.4; cursor: not-allowed; }
+  .catalog-link-box {
+    display: none; margin-top: 12px; background: #fff8f0;
+    border: 1px solid #e8c97a; border-radius: 10px; padding: 14px;
+  }
+  .catalog-link-box .link-label { font-size: 12px; color: #888; margin-bottom: 6px; }
+  .catalog-link-row { display: flex; gap: 8px; align-items: center; }
+  .catalog-link-row input {
+    flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 8px;
+    font-size: 13px; background: #fff; width: auto;
+  }
+  .btn-copy {
+    background: #6B0F2B; color: white; border: none; border-radius: 8px;
+    padding: 10px 16px; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap;
+  }
+  .link-meta { font-size: 12px; color: #6B0F2B; margin-top: 6px; font-weight: 600; }
+
+  /* PHOTO GALLERY IN EDIT MODAL */
+  .photo-gallery {
+    display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px;
+  }
+  .gallery-thumb {
+    position: relative; width: 72px; height: 72px;
+    border-radius: 8px; overflow: hidden; flex-shrink: 0;
+  }
+  .gallery-thumb img {
+    width: 100%; height: 100%; object-fit: cover;
+  }
+  .gallery-thumb .del-photo {
+    position: absolute; top: 3px; right: 3px;
+    background: rgba(0,0,0,0.6); color: white;
+    border: none; border-radius: 50%; width: 20px; height: 20px;
+    font-size: 11px; cursor: pointer; display: flex;
+    align-items: center; justify-content: center; line-height: 1;
+  }
+  .gallery-thumb .primary-badge {
+    position: absolute; bottom: 3px; left: 3px;
+    background: #6B0F2B; color: white; font-size: 9px;
+    font-weight: 700; padding: 2px 5px; border-radius: 3px;
+  }
+  .add-photo-btn {
+    width: 72px; height: 72px; border: 2px dashed #d4b896;
+    border-radius: 8px; background: #fdf9f5; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; font-size: 22px; color: #d4b896;
+    flex-shrink: 0; transition: all 0.2s;
+  }
+  .add-photo-btn:hover { border-color: #6B0F2B; color: #6B0F2B; }
+  .add-photo-btn span { font-size: 10px; color: #aaa; margin-top: 2px; }
+  .photo-count-note { font-size: 12px; color: #888; margin-top: 6px; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">🪡</div>
+    <h1>Srijan Sarees</h1>
+    <p>Admin Panel</p>
+    <input type="password" id="pwd-input" placeholder="Enter password" onkeydown="if(event.key==='Enter')doLogin()">
+    <button onclick="doLogin()">Sign In</button>
+    <p class="login-error" id="login-error">Wrong password. Try again.</p>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="top-bar">
+    <h1>🪡 Srijan Sarees</h1>
+    <button class="logout-btn" onclick="doLogout()">Logout</button>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('add-saree')">+ Saree</button>
+    <button class="tab-btn" onclick="switchTab('listings')">Listings</button>
+    <button class="tab-btn" onclick="switchTab('add-weaver')">+ Weaver</button>
+    <button class="tab-btn" onclick="switchTab('weavers')">Weavers</button>
+  </div>
+
+  <!-- ADD SAREE -->
+  <div class="tab-content active" id="tab-add-saree">
+    <br>
+    <div class="form-group">
+      <label>Weaver *</label>
+      <select id="saree-weaver">
+        <option value="">Loading weavers...</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Saree Name *</label>
+      <input type="text" id="saree-name" placeholder="e.g. Banarasi Katan Silk">
+    </div>
+    <div class="form-group">
+      <label>Fabric *</label>
+      <select id="saree-fabric">
+        <option value="">Select fabric</option>
+        <option>Silk</option>
+        <option>Cotton</option>
+        <option>Chanderi</option>
+        <option>Linen</option>
+        <option>Georgette</option>
+        <option>Chiffon</option>
+        <option>Tussar</option>
+        <option>Kanjivaram</option>
+        <option>Banarasi</option>
+        <option>Other</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Color</label>
+      <input type="text" id="saree-color" placeholder="e.g. Deep Red with Gold Border">
+    </div>
+    <div class="form-group">
+      <label>Weaver Cost (₹) — private</label>
+      <input type="number" id="saree-cost" placeholder="e.g. 3000" min="0">
+    </div>
+    <div class="form-group">
+      <label>Selling Price (₹) *</label>
+      <input type="number" id="saree-price" placeholder="e.g. 4500" min="0">
+    </div>
+    <div class="form-group">
+      <label>Available Until (optional)</label>
+      <input type="date" id="saree-available-until">
+      <small style="color:#888;font-size:12px;margin-top:4px;display:block;">Leave blank if no expiry. Saree auto-marks as unavailable after this date.</small>
+    </div>
+    <div class="form-group">
+      <label>Notes</label>
+      <textarea id="saree-notes" placeholder="Any additional details..."></textarea>
+    </div>
+    <div class="form-group">
+      <label>Photo</label>
+      <div class="photo-upload-area" onclick="document.getElementById('saree-photo').click()">
+        <input type="file" id="saree-photo" accept="image/*" onchange="previewPhoto(this)">
+        <div class="upload-icon">📷</div>
+        <div class="upload-text">Tap to <span>choose photo</span></div>
+        <img id="photo-preview" class="photo-preview" src="" alt="">
+      </div>
+    </div>
+    <button class="btn-primary" id="save-saree-btn" onclick="saveSaree()">Save Saree Listing</button>
+    <br><br>
+  </div>
+
+  <!-- LISTINGS -->
+  <div class="tab-content" id="tab-listings">
+    <br>
+
+    <!-- CATALOG LINK SECTION -->
+    <div class="catalog-section">
+      <div class="catalog-btn-row">
+        <button class="btn-catalog-all" onclick="generateCatalogLink(false)">
+          🔗 Full Catalog
+        </button>
+        <button class="btn-catalog-sel" id="btn-send-selected" onclick="generateCatalogLink(true)" disabled>
+          ✅ Send Selected (<span id="sel-count">0</span>)
+        </button>
+      </div>
+      <div class="catalog-link-box" id="catalog-link-box">
+        <div class="link-label" id="link-label">Share this link — expires in 72 hours</div>
+        <div class="catalog-link-row">
+          <input id="catalog-link-input" type="text" readonly />
+          <button class="btn-copy" onclick="copyCatalogLink()">Copy</button>
+        </div>
+        <div class="link-meta" id="link-meta"></div>
+      </div>
+    </div>
+
+    <!-- FILTER PANEL -->
+    <div class="filter-panel">
+      <button class="filter-toggle" id="filter-toggle-btn" onclick="toggleFilter()">
+        <span>🔍 Filter Sarees</span>
+        <span id="filter-toggle-arrow">▼</span>
+      </button>
+      <div class="filter-body" id="filter-body">
+
+        <div class="filter-row">
+          <div class="filter-label">Fabric</div>
+          <div class="chip-group" id="fabric-chips">
+            <div class="chip" onclick="toggleChip(this,'fabric')">Silk</div>
+            <div class="chip" onclick="toggleChip(this,'fabric')">Cotton</div>
+            <div class="chip" onclick="toggleChip(this,'fabric')">Chanderi</div>
+            <div class="chip" onclick="toggleChip(this,'fabric')">Linen</div>
+            <div class="chip" onclick="toggleChip(this,'fabric')">Georgette</div>
+            <div class="chip" onclick="toggleChip(this,'fabric')">Chiffon</div>
+            <div class="chip" onclick="toggleChip(this,'fabric')">Tussar</div>
+            <div class="chip" onclick="toggleChip(this,'fabric')">Kanjivaram</div>
+            <div class="chip" onclick="toggleChip(this,'fabric')">Banarasi</div>
+            <div class="chip" onclick="toggleChip(this,'fabric')">Other</div>
+          </div>
+        </div>
+
+        <div class="filter-row">
+          <div class="filter-label">Color / Pattern</div>
+          <div class="color-search">
+            <input type="text" id="filter-color" placeholder="e.g. red, gold, blue...">
+          </div>
+        </div>
+
+        <div class="filter-row">
+          <div class="filter-label">Price Range (₹)</div>
+          <div class="price-range">
+            <input type="number" id="filter-price-min" placeholder="Min" min="0">
+            <span>to</span>
+            <input type="number" id="filter-price-max" placeholder="Max" min="0">
+          </div>
+        </div>
+
+        <div class="filter-row">
+          <div class="filter-label">Availability</div>
+          <div class="chip-group" id="avail-chips">
+            <div class="chip active" onclick="toggleAvailChip(this,'all')" data-avail="all">All</div>
+            <div class="chip" onclick="toggleAvailChip(this,'available')" data-avail="available">Available only</div>
+            <div class="chip" onclick="toggleAvailChip(this,'sold')" data-avail="sold">Sold / Unavailable</div>
+          </div>
+        </div>
+
+        <div class="filter-actions">
+          <button class="btn-filter-apply" onclick="applyFilters()">Apply Filters</button>
+          <button class="btn-filter-clear" onclick="clearFilters()">Clear All</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SELECTION BAR -->
+    <div class="selection-bar" id="selection-bar">
+      <div class="sel-info"><strong id="visible-count">0</strong> shown · <strong id="sel-count-bar">0</strong> selected</div>
+      <div class="sel-actions">
+        <button class="btn-sel-all" onclick="selectAllVisible()">Select All</button>
+        <button class="btn-sel-clear" onclick="clearSelection()">Clear</button>
+      </div>
+    </div>
+
+    <div class="section-header">
+      <h2>Sarees</h2>
+      <button class="refresh-btn" onclick="loadListings()">↻ Refresh</button>
+    </div>
+
+    <div id="listings-container"><div class="loading">Loading...</div></div>
+  </div>
+
+  <!-- ADD WEAVER -->
+  <div class="tab-content" id="tab-add-weaver">
+    <br>
+    <div class="form-group">
+      <label>Full Name *</label>
+      <input type="text" id="weaver-name" placeholder="e.g. Ramesh Kumar">
+    </div>
+    <div class="form-group">
+      <label>WhatsApp Number *</label>
+      <input type="tel" id="weaver-phone" placeholder="e.g. 9876543210">
+    </div>
+    <div class="form-group">
+      <label>City / Region</label>
+      <input type="text" id="weaver-city" placeholder="e.g. Varanasi, UP">
+    </div>
+    <div class="form-group">
+      <label>Speciality</label>
+      <input type="text" id="weaver-speciality" placeholder="e.g. Banarasi Silk, Zari work">
+    </div>
+    <button class="btn-primary" id="save-weaver-btn" onclick="saveWeaver()">Save Weaver</button>
+    <br><br>
+  </div>
+
+  <!-- WEAVERS -->
+  <div class="tab-content" id="tab-weavers">
+    <br>
+    <div class="section-header">
+      <h2>All Weavers</h2>
+      <button class="refresh-btn" onclick="loadWeavers()">↻ Refresh</button>
+    </div>
+    <div id="weavers-container"><div class="loading">Loading...</div></div>
+  </div>
+</div>
+
+<!-- EDIT MODAL -->
+<div class="modal-overlay" id="edit-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Edit Saree</h2>
+      <button class="modal-close" onclick="closeEditModal()">✕</button>
+    </div>
+    <input type="hidden" id="edit-product-id">
+    <div class="form-group">
+      <label>Saree Name *</label>
+      <input type="text" id="edit-name" placeholder="e.g. Banarasi Katan Silk">
+    </div>
+    <div class="form-group">
+      <label>Fabric *</label>
+      <select id="edit-fabric">
+        <option value="">Select fabric</option>
+        <option>Silk</option>
+        <option>Cotton</option>
+        <option>Chanderi</option>
+        <option>Linen</option>
+        <option>Georgette</option>
+        <option>Chiffon</option>
+        <option>Tussar</option>
+        <option>Kanjivaram</option>
+        <option>Banarasi</option>
+        <option>Other</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Color</label>
+      <input type="text" id="edit-color" placeholder="e.g. Deep Red with Gold Border">
+    </div>
+    <div class="form-group">
+      <label>Weaver Cost (₹) — private</label>
+      <input type="number" id="edit-cost" placeholder="e.g. 3000" min="0">
+    </div>
+    <div class="form-group">
+      <label>Selling Price (₹) *</label>
+      <input type="number" id="edit-price" placeholder="e.g. 4500" min="0">
+    </div>
+    <div class="form-group">
+      <label>Available Until (optional)</label>
+      <input type="date" id="edit-available-until">
+      <small style="color:#888;font-size:12px;margin-top:4px;display:block;">Leave blank if no expiry.</small>
+    </div>
+    <div class="form-group">
+      <label>Notes</label>
+      <textarea id="edit-notes" placeholder="Any additional details..."></textarea>
+    </div>
+    <div class="form-group">
+      <label>Photos (up to 4 total)</label>
+      <div class="photo-gallery" id="edit-photo-gallery"></div>
+      <input type="file" id="edit-extra-photo" accept="image/*" style="display:none" onchange="uploadExtraPhoto(this)">
+      <p class="photo-count-note" id="edit-photo-note"></p>
+    </div>
+    <button class="btn-primary" id="save-edit-btn" onclick="saveEdit()">Save Changes</button>
+    <button onclick="deleteSaree(document.getElementById('edit-product-id').value)" style="width:100%;margin-top:10px;padding:13px;background:none;border:2px solid #c0392b;color:#c0392b;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;">🗑 Remove Saree</button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL = 'https://kvhjvvdwrrvkrklgyaro.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_GhCRB6ETTfhfUJKQJg5NWw_Hptn4dnO';
+const PASSWORD = 'SSS2026$';
+const BUCKET = 'saree-images';
+
+// ── STATE ─────────────────────────────────────────────
+let allSarees = [];       // all loaded from Supabase
+let filteredSarees = [];  // after filter applied
+let selectedIds = new Set();
+let activeFilters = { fabrics: [], color: '', priceMin: '', priceMax: '', avail: 'all' };
+
+// ── AUTH ──────────────────────────────────────────────
+function doLogin() {
+  const val = document.getElementById('pwd-input').value;
+  if (val === PASSWORD) {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    loadWeaverDropdown();
+    loadListings();
+    loadWeavers();
+  } else {
+    document.getElementById('login-error').style.display = 'block';
+    document.getElementById('pwd-input').value = '';
+  }
+}
+function doLogout() {
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('pwd-input').value = '';
+}
+
+// ── TABS ──────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// ── TOAST ─────────────────────────────────────────────
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + type;
+  setTimeout(() => t.className = 'toast', 3000);
+}
+
+// ── SUPABASE API ──────────────────────────────────────
+async function sbGet(path) {
+  const r = await fetch(SUPABASE_URL + '/rest/v1/' + path, {
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
+  });
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+async function sbPost(table, data) {
+  const r = await fetch(SUPABASE_URL + '/rest/v1/' + table, {
+    method: 'POST',
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': 'Bearer ' + SUPABASE_KEY,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=representation'
+    },
+    body: JSON.stringify(data)
+  });
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+async function sbPatch(table, id, data) {
+  const r = await fetch(SUPABASE_URL + '/rest/v1/' + table + '?product_id=eq.' + id, {
+    method: 'PATCH',
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': 'Bearer ' + SUPABASE_KEY,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(data)
+  });
+  if (!r.ok) throw new Error(await r.text());
+}
+
+async function uploadPhoto(file) {
+  const ext = file.name.split('.').pop();
+  const fileName = 'saree_' + Date.now() + '.' + ext;
+  const r = await fetch(SUPABASE_URL + '/storage/v1/object/' + BUCKET + '/' + fileName, {
+    method: 'POST',
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': 'Bearer ' + SUPABASE_KEY,
+      'Content-Type': file.type
+    },
+    body: file
+  });
+  if (!r.ok) throw new Error(await r.text());
+  return SUPABASE_URL + '/storage/v1/object/public/' + BUCKET + '/' + fileName;
+}
+
+// ── FILTER PANEL ──────────────────────────────────────
+function toggleFilter() {
+  const body = document.getElementById('filter-body');
+  const btn = document.getElementById('filter-toggle-btn');
+  const arrow = document.getElementById('filter-toggle-arrow');
+  body.classList.toggle('open');
+  btn.classList.toggle('open');
+  arrow.textContent = body.classList.contains('open') ? '▲' : '▼';
+}
+
+function toggleChip(el, group) {
+  el.classList.toggle('active');
+}
+
+function toggleAvailChip(el, val) {
+  document.querySelectorAll('#avail-chips .chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function applyFilters() {
+  const fabrics = [...document.querySelectorAll('#fabric-chips .chip.active')].map(c => c.textContent.trim().toLowerCase());
+  const color = document.getElementById('filter-color').value.trim().toLowerCase();
+  const priceMin = parseFloat(document.getElementById('filter-price-min').value) || 0;
+  const priceMax = parseFloat(document.getElementById('filter-price-max').value) || Infinity;
+  const availEl = document.querySelector('#avail-chips .chip.active');
+  const avail = availEl ? availEl.dataset.avail : 'all';
+
+  activeFilters = { fabrics, color, priceMin, priceMax, avail };
+
+  filteredSarees = allSarees.filter(s => {
+    const today = new Date().toISOString().split('T')[0];
+    const isAvailable = s.available && (!s.available_until || s.available_until >= today);
+
+    if (fabrics.length > 0 && !fabrics.includes((s.fabric || '').toLowerCase())) return false;
+    if (color && !(s.color || '').toLowerCase().includes(color)) return false;
+    if (s.price_inr < priceMin) return false;
+    if (s.price_inr > priceMax) return false;
+    if (avail === 'available' && !isAvailable) return false;
+    if (avail === 'sold' && isAvailable) return false;
+
+    return true;
+  });
+
+  renderListings(filteredSarees);
+
+  // Show filter summary
+  const parts = [];
+  if (fabrics.length) parts.push(fabrics.join(', '));
+  if (color) parts.push('color: ' + color);
+  if (priceMin) parts.push('₹' + priceMin + '+');
+  if (priceMax < Infinity) parts.push('up to ₹' + priceMax);
+  if (avail !== 'all') parts.push(avail);
+
+  if (parts.length) {
+    showToast('Filter: ' + parts.join(' · '), 'success');
+  }
+}
+
+function clearFilters() {
+  document.querySelectorAll('#fabric-chips .chip').forEach(c => c.classList.remove('active'));
+  document.getElementById('filter-color').value = '';
+  document.getElementById('filter-price-min').value = '';
+  document.getElementById('filter-price-max').value = '';
+  document.querySelectorAll('#avail-chips .chip').forEach(c => c.classList.remove('active'));
+  document.querySelector('#avail-chips .chip[data-avail="all"]').classList.add('active');
+  activeFilters = { fabrics: [], color: '', priceMin: 0, priceMax: Infinity, avail: 'all' };
+  filteredSarees = [...allSarees];
+  renderListings(filteredSarees);
+}
+
+// ── SELECTION ─────────────────────────────────────────
+function toggleSelect(id) {
+  if (selectedIds.has(id)) {
+    selectedIds.delete(id);
+  } else {
+    selectedIds.add(id);
+  }
+  updateSelectionUI();
+}
+
+function selectAllVisible() {
+  filteredSarees.forEach(s => selectedIds.add(s.product_id));
+  updateSelectionUI();
+  // Re-render to show checkmarks
+  renderListings(filteredSarees);
+}
+
+function clearSelection() {
+  selectedIds.clear();
+  updateSelectionUI();
+  renderListings(filteredSarees);
+}
+
+function updateSelectionUI() {
+  const count = selectedIds.size;
+  document.getElementById('sel-count').textContent = count;
+  document.getElementById('sel-count-bar').textContent = count;
+  document.getElementById('visible-count').textContent = filteredSarees.length;
+
+  const btn = document.getElementById('btn-send-selected');
+  btn.disabled = count === 0;
+
+  // Update card checkboxes visually
+  document.querySelectorAll('[data-saree-id]').forEach(el => {
+    const id = el.dataset.sareeId;
+    const card = el.closest('.card');
+    const cb = el.querySelector('.saree-checkbox-label');
+    if (selectedIds.has(id)) {
+      cb.classList.add('checked');
+      cb.textContent = '✓';
+      card.classList.add('selected');
+    } else {
+      cb.classList.remove('checked');
+      cb.textContent = '';
+      card.classList.remove('selected');
+    }
+  });
+}
+
+// ── RENDER LISTINGS ───────────────────────────────────
+function renderListings(sarees) {
+  const container = document.getElementById('listings-container');
+  const today = new Date().toISOString().split('T')[0];
+
+  document.getElementById('visible-count').textContent = sarees.length;
+  document.getElementById('sel-count-bar').textContent = selectedIds.size;
+
+  if (!sarees.length) {
+    container.innerHTML = '<div class="empty">No sarees match these filters.</div>';
+    return;
+  }
+
+  container.innerHTML = sarees.map(s => {
+    const isSelected = selectedIds.has(s.product_id);
+    const isExpired = s.available_until && s.available_until < today;
+
+    return `
+      <div class="card ${isSelected ? 'selected' : ''}" id="card-${s.product_id}">
+        <div class="saree-select-wrap" data-saree-id="${s.product_id}" onclick="toggleSelect('${s.product_id}')">
+          <div class="saree-checkbox-label ${isSelected ? 'checked' : ''}">${isSelected ? '✓' : ''}</div>
+        </div>
+        ${s.photo_url
+          ? `<img class="card-img" src="${s.photo_url}" alt="${s.saree_name}" loading="lazy">`
+          : `<div class="card-img-placeholder">🪡</div>`
+        }
+        <div class="card-body">
+          <div class="card-title">
+            ${s.saree_name}
+            ${isExpired
+              ? `<span class="badge badge-sold">Expired</span>`
+              : `<span class="badge ${s.available ? 'badge-available' : 'badge-sold'}">${s.available ? 'Available' : 'Unavailable'}</span>`
+            }
+          </div>
+          <div class="card-meta">
+            ${s.fabric}${s.color ? ' · ' + s.color : ''}<br>
+            By ${s.weavers?.full_name || 'Unknown'}
+            ${s.available_until ? `<br>📅 Available until ${s.available_until}` : ''}
+            ${s.notes ? '<br><em>' + s.notes + '</em>' : ''}
+          </div>
+          <div class="card-price">
+            ₹${Number(s.price_inr).toLocaleString('en-IN')}
+            ${s.cost_inr ? `<span style="font-size:13px;color:#888;font-weight:400;margin-left:8px;">Cost ₹${Number(s.cost_inr).toLocaleString('en-IN')} · Margin ₹${Number(s.price_inr - s.cost_inr).toLocaleString('en-IN')}</span>` : ''}
+          </div>
+          <div class="card-actions">
+            ${s.available
+              ? `<button class="btn-small btn-sold" onclick="toggleAvailability('${s.product_id}', false, this)">Mark Sold</button>`
+              : `<button class="btn-small btn-avail" onclick="toggleAvailability('${s.product_id}', true, this)">Mark Available</button>`
+            }
+            <button class="btn-small" style="background:#f0ebe6;color:#444;" onclick='openEditModal(${JSON.stringify(s)})'>✏️ Edit</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ── CATALOG LINK GENERATOR ────────────────────────────
+async function generateCatalogLink(selectedOnly) {
+  try {
+    const payload = { used_by: 'admin' };
+
+    if (selectedOnly) {
+      if (selectedIds.size === 0) {
+        showToast('Select at least one saree first', 'error');
+        return;
+      }
+      // Store as comma-separated string (catalog.html will parse it)
+      payload.product_ids = [...selectedIds].join(',');
+    }
+
+    const r = await fetch(SUPABASE_URL + '/rest/v1/catalog_tokens', {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_KEY,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=representation'
+      },
+      body: JSON.stringify(payload)
+    });
+    if (!r.ok) throw new Error(await r.text());
+    const rows = await r.json();
+    const token = rows[0].token;
+    const link = 'https://srijansilk.com/catalog.html?token=' + token;
+    document.getElementById('catalog-link-input').value = link;
+    document.getElementById('catalog-link-box').style.display = 'block';
+
+    if (selectedOnly) {
+      document.getElementById('link-label').textContent = `Filtered catalog · ${selectedIds.size} saree${selectedIds.size > 1 ? 's' : ''} · expires in 72 hours`;
+      document.getElementById('link-meta').textContent = `Customer will only see the ${selectedIds.size} sarees you selected`;
+    } else {
+      document.getElementById('link-label').textContent = 'Full catalog · all available sarees · expires in 72 hours';
+      document.getElementById('link-meta').textContent = '';
+    }
+
+    showToast('✅ Catalog link generated!', 'success');
+  } catch(e) {
+    showToast('Error generating link: ' + e.message, 'error');
+  }
+}
+
+function copyCatalogLink() {
+  const input = document.getElementById('catalog-link-input');
+  input.select();
+  navigator.clipboard.writeText(input.value).then(() => {
+    showToast('📋 Link copied!', 'success');
+  }).catch(() => {
+    document.execCommand('copy');
+    showToast('📋 Link copied!', 'success');
+  });
+}
+
+// ── LOAD LISTINGS ─────────────────────────────────────
+async function loadListings() {
+  const container = document.getElementById('listings-container');
+  container.innerHTML = '<div class="loading">Loading...</div>';
+  selectedIds.clear();
+  document.getElementById('sel-count').textContent = '0';
+  document.getElementById('sel-count-bar').textContent = '0';
+  document.getElementById('btn-send-selected').disabled = true;
+  document.getElementById('catalog-link-box').style.display = 'none';
+
+  try {
+    allSarees = await sbGet('products?select=product_id,saree_name,fabric,color,price_inr,cost_inr,photo_url,available,available_until,notes,weavers(full_name)&order=created_at.desc');
+    filteredSarees = [...allSarees];
+    if (!allSarees.length) {
+      container.innerHTML = '<div class="empty">No sarees listed yet.<br>Add your first one!</div>';
+      document.getElementById('visible-count').textContent = '0';
+      return;
+    }
+    renderListings(filteredSarees);
+  } catch(e) {
+    container.innerHTML = '<div class="empty">Error loading. Check connection.</div>';
+    showToast(e.message, 'error');
+  }
+}
+
+async function toggleAvailability(id, avail, btn) {
+  btn.disabled = true;
+  btn.textContent = '...';
+  try {
+    await sbPatch('products', id, { available: avail });
+    showToast(avail ? '✅ Marked available' : '🔴 Marked sold', 'success');
+    loadListings();
+  } catch(e) {
+    showToast('Error: ' + e.message, 'error');
+    btn.disabled = false;
+  }
+}
+
+// ── WEAVERS DROPDOWN ──────────────────────────────────
+async function loadWeaverDropdown() {
+  try {
+    const rows = await sbGet('weavers?select=weaver_id,full_name&order=full_name');
+    const sel = document.getElementById('saree-weaver');
+    sel.innerHTML = '<option value="">Select weaver</option>';
+    rows.forEach(w => {
+      const o = document.createElement('option');
+      o.value = w.weaver_id;
+      o.textContent = w.full_name;
+      sel.appendChild(o);
+    });
+  } catch(e) {
+    console.error(e);
+  }
+}
+
+// ── PHOTO PREVIEW ─────────────────────────────────────
+function previewPhoto(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const preview = document.getElementById('photo-preview');
+  preview.src = URL.createObjectURL(file);
+  preview.style.display = 'block';
+  document.querySelector('.upload-text').textContent = file.name;
+}
+
+// ── SAVE SAREE ────────────────────────────────────────
+async function saveSaree() {
+  const weaverId = document.getElementById('saree-weaver').value;
+  const name = document.getElementById('saree-name').value.trim();
+  const fabric = document.getElementById('saree-fabric').value;
+  const color = document.getElementById('saree-color').value.trim();
+  const cost = document.getElementById('saree-cost').value;
+  const price = document.getElementById('saree-price').value;
+  const availableUntil = document.getElementById('saree-available-until').value;
+  const notes = document.getElementById('saree-notes').value.trim();
+  const photoFile = document.getElementById('saree-photo').files[0];
+
+  if (!weaverId) return showToast('Please select a weaver', 'error');
+  if (!name) return showToast('Please enter saree name', 'error');
+  if (!fabric) return showToast('Please select fabric', 'error');
+  if (!price) return showToast('Please enter price', 'error');
+
+  const btn = document.getElementById('save-saree-btn');
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
+
+  try {
+    let photoUrl = null;
+    if (photoFile) {
+      btn.textContent = 'Uploading photo...';
+      photoUrl = await uploadPhoto(photoFile);
+    }
+
+    await sbPost('products', {
+      weaver_id: weaverId,
+      saree_name: name,
+      fabric: fabric,
+      color: color || null,
+      cost_inr: cost ? parseFloat(cost) : null,
+      price_inr: parseFloat(price),
+      notes: notes || null,
+      photo_url: photoUrl,
+      available: true,
+      available_until: availableUntil || null
+    });
+
+    showToast('✅ Saree saved!', 'success');
+    document.getElementById('saree-weaver').value = '';
+    document.getElementById('saree-name').value = '';
+    document.getElementById('saree-fabric').value = '';
+    document.getElementById('saree-color').value = '';
+    document.getElementById('saree-cost').value = '';
+    document.getElementById('saree-price').value = '';
+    document.getElementById('saree-available-until').value = '';
+    document.getElementById('saree-notes').value = '';
+    document.getElementById('saree-photo').value = '';
+    document.getElementById('photo-preview').style.display = 'none';
+    document.querySelector('.upload-text').innerHTML = 'Tap to <span>choose photo</span>';
+  } catch(e) {
+    showToast('Error: ' + e.message, 'error');
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Save Saree Listing';
+}
+
+// ── DELETE SAREE ──────────────────────────────────────
+async function deleteSaree(id) {
+  if (!confirm('Remove this saree permanently?')) return;
+  try {
+    const r = await fetch(SUPABASE_URL + '/rest/v1/products?product_id=eq.' + id, {
+      method: 'DELETE',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_KEY
+      }
+    });
+    if (!r.ok) throw new Error(await r.text());
+    showToast('🗑 Saree removed', 'success');
+    closeEditModal();
+    loadListings();
+  } catch(e) {
+    showToast('Error: ' + e.message, 'error');
+  }
+}
+
+// ── SAVE WEAVER ───────────────────────────────────────
+async function saveWeaver() {
+  const name = document.getElementById('weaver-name').value.trim();
+  const phone = document.getElementById('weaver-phone').value.trim();
+  const city = document.getElementById('weaver-city').value.trim();
+  const speciality = document.getElementById('weaver-speciality').value.trim();
+
+  if (!name) return showToast('Please enter weaver name', 'error');
+  if (!phone) return showToast('Please enter WhatsApp number', 'error');
+
+  const btn = document.getElementById('save-weaver-btn');
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
+
+  try {
+    await sbPost('weavers', {
+      full_name: name,
+      whatsapp_number: phone,
+      region: city || null,
+      speciality: speciality || null,
+      active: true
+    });
+
+    showToast('✅ Weaver saved!', 'success');
+    document.getElementById('weaver-name').value = '';
+    document.getElementById('weaver-phone').value = '';
+    document.getElementById('weaver-city').value = '';
+    document.getElementById('weaver-speciality').value = '';
+    await loadWeaverDropdown();
+    loadWeavers();
+    switchTab('add-saree');
+  } catch(e) {
+    showToast('Error: ' + e.message, 'error');
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Save Weaver';
+}
+
+// ── EDIT MODAL ────────────────────────────────────────
+function openEditModal(s) {
+  document.getElementById('edit-product-id').value = s.product_id;
+  document.getElementById('edit-name').value = s.saree_name || '';
+  document.getElementById('edit-fabric').value = s.fabric || '';
+  document.getElementById('edit-color').value = s.color || '';
+  document.getElementById('edit-cost').value = s.cost_inr || '';
+  document.getElementById('edit-price').value = s.price_inr || '';
+  document.getElementById('edit-notes').value = s.notes || '';
+  document.getElementById('edit-available-until').value = s.available_until || '';
+  document.getElementById('edit-modal').classList.add('open');
+  loadEditPhotos(s.product_id, s.photo_url);
+}
+function closeEditModal() {
+  document.getElementById('edit-modal').classList.remove('open');
+}
+async function saveEdit() {
+  const id = document.getElementById('edit-product-id').value;
+  const name = document.getElementById('edit-name').value.trim();
+  const fabric = document.getElementById('edit-fabric').value;
+  const color = document.getElementById('edit-color').value.trim();
+  const cost = document.getElementById('edit-cost').value;
+  const price = document.getElementById('edit-price').value;
+  const availableUntil = document.getElementById('edit-available-until').value;
+  const notes = document.getElementById('edit-notes').value.trim();
+
+  if (!name) return showToast('Please enter saree name', 'error');
+  if (!price) return showToast('Please enter selling price', 'error');
+
+  const btn = document.getElementById('save-edit-btn');
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
+
+  try {
+    await sbPatch('products', id, {
+      saree_name: name,
+      fabric: fabric,
+      color: color || null,
+      cost_inr: cost ? parseFloat(cost) : null,
+      price_inr: parseFloat(price),
+      notes: notes || null,
+      available_until: availableUntil || null
+    });
+    showToast('✅ Saree updated!', 'success');
+    closeEditModal();
+    loadListings();
+  } catch(e) {
+    showToast('Error: ' + e.message, 'error');
+  }
+  btn.disabled = false;
+  btn.textContent = 'Save Changes';
+}
+
+// ── EXTRA PHOTOS ──────────────────────────────────────
+let editPhotos = []; // [{photo_id, photo_url, sort_order, is_primary}]
+let editCurrentProductId = null;
+
+async function loadEditPhotos(productId, primaryPhotoUrl) {
+  editCurrentProductId = productId;
+  editPhotos = [];
+
+  // Primary photo from products.photo_url
+  if (primaryPhotoUrl) {
+    editPhotos.push({ photo_id: null, photo_url: primaryPhotoUrl, sort_order: 0, is_primary: true });
+  }
+
+  // Extra photos from saree_photos
+  try {
+    const rows = await sbGet(`saree_photos?product_id=eq.${productId}&order=sort_order`);
+    rows.forEach(r => editPhotos.push({ photo_id: r.photo_id, photo_url: r.photo_url, sort_order: r.sort_order, is_primary: false }));
+  } catch(e) {
+    console.error('Could not load extra photos', e);
+  }
+
+  renderEditPhotos();
+}
+
+function renderEditPhotos() {
+  const gallery = document.getElementById('edit-photo-gallery');
+  const note = document.getElementById('edit-photo-note');
+  const total = editPhotos.length;
+
+  gallery.innerHTML = editPhotos.map((p, i) => `
+    <div class="gallery-thumb">
+      <img src="${p.photo_url}" alt="Photo ${i+1}">
+      ${p.is_primary ? '<div class="primary-badge">Cover</div>' : ''}
+      ${!p.is_primary ? `<button class="del-photo" onclick="deleteExtraPhoto(${p.photo_id})">✕</button>` : ''}
+    </div>
+  `).join('');
+
+  if (total < 4) {
+    gallery.innerHTML += `
+      <div class="add-photo-btn" onclick="document.getElementById('edit-extra-photo').click()">
+        📷<span>Add</span>
+      </div>`;
+  }
+
+  note.textContent = total >= 4
+    ? 'Maximum 4 photos reached. Remove one to add another.'
+    : `${total} of 4 photos · tap + to add more`;
+}
+
+async function uploadExtraPhoto(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (editPhotos.length >= 4) { showToast('Maximum 4 photos', 'error'); return; }
+
+  showToast('Uploading...', 'success');
+  try {
+    const url = await uploadPhoto(file);
+    const nextOrder = editPhotos.filter(p => !p.is_primary).length + 1;
+    const rows = await sbPost('saree_photos', {
+      product_id: parseInt(editCurrentProductId),
+      photo_url: url,
+      sort_order: nextOrder
+    });
+    editPhotos.push({ photo_id: rows[0].photo_id, photo_url: url, sort_order: nextOrder, is_primary: false });
+    renderEditPhotos();
+    showToast('✅ Photo added!', 'success');
+  } catch(e) {
+    showToast('Error: ' + e.message, 'error');
+  }
+  input.value = '';
+}
+
+async function deleteExtraPhoto(photoId) {
+  try {
+    const r = await fetch(SUPABASE_URL + '/rest/v1/saree_photos?photo_id=eq.' + photoId, {
+      method: 'DELETE',
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
+    });
+    if (!r.ok) throw new Error(await r.text());
+    editPhotos = editPhotos.filter(p => p.photo_id !== photoId);
+    renderEditPhotos();
+    showToast('Photo removed', 'success');
+  } catch(e) {
+    showToast('Error: ' + e.message, 'error');
+  }
+}
+
+// ── LOAD WEAVERS ──────────────────────────────────────
+async function loadWeavers() {
+  const container = document.getElementById('weavers-container');
+  container.innerHTML = '<div class="loading">Loading...</div>';
+  try {
+    const rows = await sbGet('weavers?order=full_name');
+    if (!rows.length) {
+      container.innerHTML = '<div class="empty">No weavers added yet.</div>';
+      return;
+    }
+    container.innerHTML = rows.map(w => `
+      <div class="weaver-card">
+        <div class="weaver-avatar">${w.full_name.charAt(0).toUpperCase()}</div>
+        <div class="weaver-info">
+          <h3>${w.full_name}</h3>
+          <p>📱 ${w.whatsapp_number}</p>
+          ${w.region ? `<p>📍 ${w.region}</p>` : ''}
+          ${w.speciality ? `<p>🧵 ${w.speciality}</p>` : ''}
+        </div>
+      </div>
+    `).join('');
+  } catch(e) {
+    container.innerHTML = '<div class="empty">Error loading. Check connection.</div>';
+    showToast(e.message, 'error');
+  }
+}
+</script>
+</body>
+</html>
