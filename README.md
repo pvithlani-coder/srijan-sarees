@@ -27,17 +27,21 @@ WhatsApp saree marketplace with customer catalog and admin portal.
 
 ## Local Development
 
-No build step needed. Just open the files directly:
+The catalog page has no build step — open it directly:
 
 ```bash
-# Option 1: open directly in browser
 open public/catalog.html
-open public/admin.html
-
-# Option 2: simple local server (avoids CORS on some browsers)
-npx serve public
-# then open http://localhost:3000
 ```
+
+The admin portal's login now calls a Netlify Function (`netlify/functions/login.js`), so it needs the Netlify CLI to run locally:
+
+```bash
+npm install -g netlify-cli   # one-time
+netlify dev
+# then open http://localhost:8888/admin.html
+```
+
+`netlify dev` picks up `ADMIN_PASSWORD` / `SESSION_SECRET` from a local `.env` file (gitignored) or from `netlify env:import`.
 
 ## Deploying
 
@@ -57,8 +61,12 @@ git push origin main
 
 ## Environment / Secrets
 
-No `.env` files needed — the Supabase publishable key is safe to commit (it's read-only public access). The admin password is hardcoded in `admin.html`.
+The Supabase publishable key is committed in both HTML files — this is safe only to the extent that Supabase Row Level Security policies on `products`, `weavers`, `saree_photos`, and `catalog_tokens` are locked down; it is not a read-only key by default.
 
-Netlify secrets (set in Netlify dashboard → Site settings → Environment variables):
-- `NETLIFY_AUTH_TOKEN` — for GitHub Actions deploy (set as GitHub secret)
-- `NETLIFY_SITE_ID` — your Netlify site ID (set as GitHub secret)
+The admin password is **not** in the repo. It's checked server-side by `netlify/functions/login.js`. Set these in Netlify dashboard → Site settings → Environment variables:
+- `ADMIN_PASSWORD` — the admin portal password
+- `SESSION_SECRET` — random string used to sign session tokens (e.g. `openssl rand -hex 32`)
+
+Netlify secrets for GitHub Actions deploy (set as GitHub repo secrets):
+- `NETLIFY_AUTH_TOKEN`
+- `NETLIFY_SITE_ID`

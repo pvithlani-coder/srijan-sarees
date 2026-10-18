@@ -1,11 +1,6 @@
 [build]
   publish = "public"
-
-# Redirect root to catalog (customer-facing default)
-[[redirects]]
-  from = "/"
-  to = "/catalog.html"
-  status = 302
+  functions = "netlify/functions"
 
 # Clean URLs — /catalog → /catalog.html
 [[redirects]]

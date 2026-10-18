@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="srijan">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Srijan Sarees — Exclusive Silk Collection</title>
+<meta name="description" content="Srijan Sarees — handpicked silk sarees. Request our private catalog on WhatsApp and order directly.">
+<link rel="icon" href="/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cardo:ital,wght@0,400;0,700;1,400&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+<style>
+  [data-theme="srijan"] {
+    color-scheme: light;
+    --color-base-100: #FFFFFF;
+    --color-base-200: #FAF6EE;
+    --color-base-300: #EFE6D2;
+    --color-base-content: #3A2B1E;
+    --color-primary: #8A5A12;
+    --color-primary-content: #FFFFFF;
+    --color-secondary: #6B0F2B;
+    --color-secondary-content: #FFFFFF;
+    --color-accent: #E8C97A;
+    --color-accent-content: #3A2B1E;
+    --color-neutral: #533E2D;
+    --color-neutral-content: #FBF3E2;
+    --color-info: #4B7C9B;
+    --color-info-content: #FFFFFF;
+    --color-success: #4F8A63;
+    --color-success-content: #FFFFFF;
+    --color-warning: #C98A1B;
+    --color-warning-content: #2B1D05;
+    --color-error: #B3402F;
+    --color-error-content: #FFFFFF;
+    --radius-selector: 1rem;
+    --radius-field: 0;
+    --radius-box: 0;
+    --size-selector: 0.25rem;
+    --size-field: 0.25rem;
+    --border: 1px;
+    --depth: 0;
+    --noise: 0;
+  }
+
+  :root { --font-serif: 'Cardo', Georgia, serif; --font-sans: 'Lato', system-ui, sans-serif; }
+  html { scroll-behavior: smooth; }
+  body { font-family: var(--font-sans); font-weight: 300; }
+  h1, h2, h3, h4, .serif { font-family: var(--font-serif); font-weight: 400; }
+  section[id] { scroll-margin-top: 90px; }
+
+  /* Tracked uppercase labels, as on the reference */
+  .eyebrow { font-size: 0.72rem; letter-spacing: 0.32em; text-transform: uppercase; color: var(--color-primary); font-weight: 400; }
+  .discover {
+    font-size: 0.75rem; letter-spacing: 0.28em; text-transform: uppercase; font-weight: 400;
+    border-bottom: 1px solid currentColor; padding-bottom: 4px; display: inline-block;
+    transition: letter-spacing .35s ease, color .35s ease;
+  }
+  .discover:hover { letter-spacing: 0.4em; color: var(--color-primary); }
+  .btn { text-transform: uppercase; letter-spacing: 0.22em; font-size: 0.75rem; font-weight: 400; }
+
+  /* Zari diamond lattice — echoes the diamond frame in the logo */
+  .silk {
+    --photo: linear-gradient(transparent, transparent);
+    position: relative; overflow: hidden; isolation: isolate;
+    background-color: var(--silk-bg, #6B0F2B);
+    background-image:
+      var(--photo),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48'%3E%3Cpath d='M24 4 44 24 24 44 4 24Z' fill='none' stroke='%23E8C97A' stroke-opacity='.22' stroke-width='1'/%3E%3Cpath d='M24 16 32 24 24 32 16 24Z' fill='%23E8C97A' fill-opacity='.10'/%3E%3C/svg%3E"),
+      radial-gradient(120% 90% at 20% 0%, rgba(255,255,255,.14), transparent 55%);
+    background-size: cover, 48px 48px, cover;
+    background-position: center;
+  }
+  .silk::after { content: ""; position: absolute; inset: 14px; border: 1px solid rgba(232,201,122,.55); pointer-events: none; z-index: 1; }
+  .silk.rounded-t-full::after { border-radius: 999px 999px 0 0; }
+  .silk-crimson { --silk-bg: #6B0F2B; }
+  .silk-brown   { --silk-bg: #533E2D; }
+  .silk-gold    { --silk-bg: #A06D1C; }
+  .silk-ivory   { --silk-bg: #F3E8CF; }
+  .silk-ivory::after { border-color: rgba(160,109,28,.5); }
+  .silk > .silk-label { position: relative; z-index: 2; }
+  .emblem-light { filter: brightness(1.7) saturate(.85); }
+
+  .tile .silk { transition: transform 1.2s cubic-bezier(.2,.7,.2,1); }
+  .tile:hover .silk { transform: scale(1.04); }
+  .tile .frame { overflow: hidden; }
+
+  /* Floating nav */
+  #nav-wrap { position: fixed; left: 0; right: 0; top: 52px; z-index: 50; padding: 0 1rem; transition: top .45s ease; pointer-events: none; }
+  #nav-wrap.scrolled { top: 12px; }
+  #nav { pointer-events: auto; max-width: 68rem; margin: 0 auto; background: rgba(255,255,255,.82); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border: 1px solid rgba(160,109,28,.25); border-radius: 999px; padding: 0 .75rem 0 1.25rem; min-height: 3.75rem; transition: box-shadow .45s ease, background .45s ease; }
+  #nav-wrap.scrolled #nav { box-shadow: 0 12px 40px -18px rgba(83,62,45,.45); background: rgba(255,255,255,.92); }
+  .footer-title { opacity: 1; color: var(--color-primary); }
+  .nav-link { font-size: .72rem; letter-spacing: .24em; text-transform: uppercase; padding: .5rem .9rem; position: relative; }
+  .nav-link::after { content: ""; position: absolute; left: .9rem; right: .9rem; bottom: .2rem; height: 1px; background: var(--color-primary); transform: scaleX(0); transform-origin: left; transition: transform .35s ease; }
+  .nav-link:hover::after { transform: scaleX(1); }
+
+  /* Scroll reveal */
+  .reveal { opacity: 0; transform: translateY(28px); transition: opacity 1s cubic-bezier(.2,.7,.2,1), transform 1s cubic-bezier(.2,.7,.2,1); transition-delay: var(--d, 0ms); }
+  .reveal.in { opacity: 1; transform: none; }
+  .reveal-img { position: relative; --cover: var(--color-base-200); }
+  .reveal-img::before { content: ""; position: absolute; inset: -1px; z-index: 5; background: var(--cover); transform-origin: top; transition: transform 1.3s cubic-bezier(.7,0,.2,1); transition-delay: var(--d, 0ms); }
+  .reveal-img.in::before { transform: scaleY(0); }
+  .frame.reveal-img { --cover: var(--color-base-100); }
+  .rule { width: 56px; height: 1px; background: var(--color-primary); margin-left: auto; margin-right: auto; transform: scaleX(0); transition: transform 1s ease .2s; }
+  .rule.in { transform: scaleX(1); }
+
+  @keyframes drift { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-10px) } }
+  .drift { animation: drift 7s ease-in-out infinite; }
+  @keyframes marquee { to { transform: translateX(-50%); } }
+  .marquee-track { display: flex; width: max-content; animation: marquee 38s linear infinite; }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .reveal, .rule { opacity: 1; transform: none; transition: none; }
+    .reveal-img::before { display: none; }
+    .drift, .marquee-track { animation: none; }
+  }
+</style>
+</head>
+<body class="bg-base-100 text-base-content antialiased">
+
+<!-- ANNOUNCEMENT BAR -->
+<div class="bg-neutral text-neutral-content text-center py-2.5 px-3 text-[0.62rem] sm:text-[0.7rem] tracking-[0.16em] sm:tracking-[0.22em] uppercase h-[36px] leading-[1.1rem] whitespace-nowrap overflow-hidden">
+  Private catalog &nbsp;·&nbsp; Order on WhatsApp<span class="hidden md:inline">&nbsp;·&nbsp; UPI, bank transfer &amp; cash on delivery</span>
+</div>
+
+<!-- FLOATING NAV -->
+<div id="nav-wrap">
+  <div id="nav" class="navbar">
+    <div class="navbar-start">
+      <div class="dropdown lg:hidden">
+        <div tabindex="0" role="button" class="btn btn-ghost btn-circle" aria-label="Open menu">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-width="1.5" d="M4 8h16M4 16h16" /></svg>
+        </div>
+        <ul tabindex="0" class="menu dropdown-content bg-base-100 rounded-box z-10 mt-4 w-60 p-3 shadow border border-base-300">
+          <li><a href="#collections">Collections</a></li>
+          <li><a href="#about">About Us</a></li>
+          <li><a href="#craft">Craft</a></li>
+          <li><a href="#how">How it works</a></li>
+          <li><a href="#contact">Contact</a></li>
+        </ul>
+      </div>
+      <div class="hidden lg:flex">
+        <a href="#collections" class="nav-link">Collections</a>
+        <a href="#about" class="nav-link">About Us</a>
+      </div>
+    </div>
+    <div class="navbar-center min-w-0">
+      <a href="#top" class="flex items-center gap-3" aria-label="Srijan Sarees — home">
+        <img src="/logo-mark.png" alt="" class="h-10 w-auto">
+        <span class="serif text-lg tracking-[0.3em] text-neutral hidden sm:inline">SRIJAN</span>
+      </a>
+    </div>
+    <div class="navbar-end">
+      <div class="hidden lg:flex">
+        <a href="#craft" class="nav-link">Craft</a>
+        <a href="#how" class="nav-link">How it works</a>
+      </div>
+      <a href="#catalog" class="btn btn-neutral btn-sm rounded-full px-3 sm:px-5 ml-1 tracking-[0.12em] sm:tracking-[0.22em]">Catalog</a>
+    </div>
+  </div>
+</div>
+
+<!-- HERO -->
+<header id="top" class="relative bg-base-200 overflow-hidden">
+  <div class="max-w-6xl mx-auto px-6 pt-32 pb-14 lg:pt-44 lg:pb-28 grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-14 items-center">
+    <div class="order-2 lg:order-1 text-center lg:text-left">
+      <p class="eyebrow reveal">Exclusive Silk Collection</p>
+      <h1 class="reveal text-4xl sm:text-6xl lg:text-5xl xl:text-6xl leading-[1.1] mt-6 text-neutral" style="--d:120ms">
+        Woven with <em class="text-primary">grace.</em><br>Chosen with care.
+      </h1>
+      <p class="reveal mt-8 max-w-md mx-auto lg:mx-0 text-base leading-relaxed text-base-content/75" style="--d:240ms">
+        Srijan Sarees brings you handpicked silk sarees through a private catalog, shared personally on WhatsApp and always up to date.
+      </p>
+      <div class="reveal mt-8 sm:mt-10 flex flex-col sm:flex-row gap-6 items-center justify-center lg:justify-start" style="--d:360ms">
+        <a href="#catalog" class="btn btn-neutral btn-lg px-10">View Catalog</a>
+        <a href="#about" class="discover">Our story</a>
+      </div>
+    </div>
+
+    <div class="order-1 lg:order-2 flex justify-center">
+      <div class="reveal-img silk silk-crimson w-full max-w-[16rem] sm:max-w-[26rem] aspect-[4/5] rounded-t-full flex items-center justify-center" style="--d:200ms" data-parallax>
+        <!-- To use a photo: add style="--photo:url('/images/hero.jpg')" to this div -->
+        <img src="/logo-mark.png" alt="Srijan Sarees emblem" class="silk-label emblem-light drift w-1/2">
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- MARQUEE -->
+<div class="border-y border-base-300 bg-base-100 py-5 overflow-hidden" aria-hidden="true">
+  <div class="marquee-track serif text-2xl text-neutral/70 italic">
+    <span class="px-8">Handpicked silks</span><span class="px-8 text-primary">◆</span>
+    <span class="px-8">Private catalog</span><span class="px-8 text-primary">◆</span>
+    <span class="px-8">Personal service</span><span class="px-8 text-primary">◆</span>
+    <span class="px-8">Honest pricing</span><span class="px-8 text-primary">◆</span>
+    <span class="px-8">Handpicked silks</span><span class="px-8 text-primary">◆</span>
+    <span class="px-8">Private catalog</span><span class="px-8 text-primary">◆</span>
+    <span class="px-8">Personal service</span><span class="px-8 text-primary">◆</span>
+    <span class="px-8">Honest pricing</span><span class="px-8 text-primary">◆</span>
+  </div>
+</div>
+
+<!-- COLLECTIONS -->
+<section id="collections" class="py-16 sm:py-24 lg:py-32 px-6">
+  <div class="max-w-6xl mx-auto">
+    <div class="text-center mb-10 sm:mb-16">
+      <p class="eyebrow reveal">The Edit</p>
+      <h2 class="reveal text-3xl sm:text-4xl lg:text-5xl mt-4 text-neutral" style="--d:100ms">Collections to fall in love with</h2>
+      <div class="rule reveal-rule mt-8"></div>
+    </div>
+
+    <div class="grid grid-cols-1 gap-10 md:grid-cols-3">
+      <a href="#catalog" class="tile block group max-w-sm mx-auto md:max-w-none w-full">
+        <div class="frame reveal-img" style="--d:0ms">
+          <div class="silk silk-crimson aspect-[4/5] md:aspect-[3/4] flex items-end p-6 sm:p-8"><span class="silk-label serif text-2xl sm:text-3xl text-white break-words max-w-full">Festive</span></div>
+        </div>
+        <div class="reveal text-center mt-6" style="--d:150ms">
+          <h3 class="text-2xl text-neutral">The Festive Edit</h3>
+          <p class="text-sm text-base-content/65 mt-2">Rich silks for celebrations that deserve to be remembered.</p>
+          <span class="discover mt-5">Discover</span>
+        </div>
+      </a>
+      <a href="#catalog" class="tile block group max-w-sm mx-auto md:max-w-none w-full md:mt-14">
+        <div class="frame reveal-img" style="--d:150ms">
+          <div class="silk silk-gold aspect-[4/5] md:aspect-[3/4] flex items-end p-6 sm:p-8"><span class="silk-label serif text-2xl sm:text-3xl text-white break-words max-w-full">Occasion</span></div>
+        </div>
+        <div class="reveal text-center mt-6" style="--d:300ms">
+          <h3 class="text-2xl text-neutral">Bridal &amp; Occasion</h3>
+          <p class="text-sm text-base-content/65 mt-2">Statement sarees for weddings and milestone moments.</p>
+          <span class="discover mt-5">Discover</span>
+        </div>
+      </a>
+      <a href="#catalog" class="tile block group max-w-sm mx-auto md:max-w-none w-full">
+        <div class="frame reveal-img" style="--d:300ms">
+          <div class="silk silk-brown aspect-[4/5] md:aspect-[3/4] flex items-end p-6 sm:p-8"><span class="silk-label serif text-2xl sm:text-3xl text-white break-words max-w-full">Everyday</span></div>
+        </div>
+        <div class="reveal text-center mt-6" style="--d:450ms">
+          <h3 class="text-2xl text-neutral">Everyday Silk</h3>
+          <p class="text-sm text-base-content/65 mt-2">Lighter weaves that carry luxury into daily life.</p>
+          <span class="discover mt-5">Discover</span>
+        </div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ABOUT US -->
+<section id="about" class="bg-base-200 py-16 sm:py-24 lg:py-32 px-6">
+  <div class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+    <div class="reveal-img silk silk-ivory aspect-[4/5] max-w-md mx-auto w-full flex items-center justify-center">
+      <img src="/logo-lockup.png" alt="Srijan Sarees" class="silk-label w-3/5">
+    </div>
+    <div>
+      <p class="eyebrow reveal">About Us</p>
+      <h2 class="reveal text-3xl sm:text-4xl lg:text-5xl mt-4 text-neutral leading-tight" style="--d:100ms">A saree is a story you wear.</h2>
+      <div class="reveal mt-8 space-y-5 text-base-content/75 leading-relaxed" style="--d:200ms">
+        <p>Srijan Sarees began with a simple belief: choosing a silk saree should feel personal, unhurried and honest. We select every piece ourselves, looking for fabric that feels right, colour that glows and craft that lasts.</p>
+        <p>Instead of an endless shop floor, we share a private, always-fresh catalog directly with you. You browse in your own time, ask us anything, and we take care of the rest, one conversation at a time.</p>
+      </div>
+      <div class="reveal mt-10 grid grid-cols-1 sm:grid-cols-3 gap-5 sm:gap-6 border-t border-base-300 pt-8" style="--d:300ms">
+        <div>
+          <p class="serif text-2xl text-primary">Handpicked</p>
+          <p class="text-xs text-base-content/60 mt-1">Every saree chosen by us</p>
+        </div>
+        <div>
+          <p class="serif text-2xl text-primary">Transparent</p>
+          <p class="text-xs text-base-content/60 mt-1">Fabric and price, upfront</p>
+        </div>
+        <div>
+          <p class="serif text-2xl text-primary">Personal</p>
+          <p class="text-xs text-base-content/60 mt-1">Guided over WhatsApp</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CRAFT -->
+<section id="craft" class="py-16 sm:py-24 lg:py-36 px-6 text-center">
+  <div class="max-w-3xl mx-auto">
+    <p class="eyebrow reveal">The Craft</p>
+    <h2 class="reveal text-3xl sm:text-4xl lg:text-6xl mt-5 text-neutral leading-tight" style="--d:100ms">
+      Silk, zari and the patience of skilled hands.
+    </h2>
+    <div class="rule mt-10"></div>
+    <p class="reveal mt-10 text-lg leading-relaxed text-base-content/75" style="--d:200ms">
+      Behind every saree is a long line of craft: yarn dyed to colour, patterns set on the loom, motifs woven thread by thread. We choose pieces that honour that work, and we like to say so plainly.
+    </p>
+    <blockquote class="reveal serif italic text-2xl lg:text-3xl text-primary mt-12" style="--d:300ms">
+      &ldquo;A weaver&rsquo;s poem, worn for a lifetime.&rdquo;
+    </blockquote>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section id="how" class="bg-base-200 py-16 sm:py-24 lg:py-32 px-6">
+  <div class="max-w-6xl mx-auto">
+    <div class="text-center mb-10 sm:mb-16">
+      <p class="eyebrow reveal">Simple &amp; Personal</p>
+      <h2 class="reveal text-4xl lg:text-5xl mt-4 text-neutral" style="--d:100ms">How it works</h2>
+    </div>
+    <div class="grid gap-px bg-base-300 sm:grid-cols-2 lg:grid-cols-4 border border-base-300">
+      <div class="reveal bg-base-200 p-8 sm:p-10 text-center" style="--d:0ms">
+        <p class="serif text-5xl text-primary/80">01</p>
+        <h3 class="text-xl mt-4 text-neutral">Say hello</h3>
+        <p class="text-sm text-base-content/65 mt-3">Message us on WhatsApp and ask for the catalog.</p>
+      </div>
+      <div class="reveal bg-base-200 p-8 sm:p-10 text-center" style="--d:120ms">
+        <p class="serif text-5xl text-primary/80">02</p>
+        <h3 class="text-xl mt-4 text-neutral">Get your link</h3>
+        <p class="text-sm text-base-content/65 mt-3">We send a private catalog link, valid for 72 hours.</p>
+      </div>
+      <div class="reveal bg-base-200 p-8 sm:p-10 text-center" style="--d:240ms">
+        <p class="serif text-5xl text-primary/80">03</p>
+        <h3 class="text-xl mt-4 text-neutral">Browse &amp; ask</h3>
+        <p class="text-sm text-base-content/65 mt-3">Explore at leisure and tap Inquire on any saree you love.</p>
+      </div>
+      <div class="reveal bg-base-200 p-8 sm:p-10 text-center" style="--d:360ms">
+        <p class="serif text-5xl text-primary/80">04</p>
+        <h3 class="text-xl mt-4 text-neutral">Order with ease</h3>
+        <p class="text-sm text-base-content/65 mt-3">Pay by UPI, bank transfer or cash on delivery.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CATALOG CTA -->
+<section id="catalog" class="silk silk-brown py-20 sm:py-28 lg:py-36 px-8 sm:px-6 text-center">
+  <div class="silk-label max-w-2xl mx-auto relative z-[2]">
+    <img src="/logo-mark.png" alt="" class="emblem-light h-16 w-auto mx-auto reveal">
+    <p class="reveal mt-8 text-[0.72rem] tracking-[0.32em] uppercase text-accent font-normal" style="--d:100ms">By invitation</p>
+    <h2 class="reveal text-3xl sm:text-4xl lg:text-6xl mt-4 text-white leading-tight" style="--d:200ms">Our catalog is shared privately.</h2>
+    <p class="reveal mt-6 text-white/75 leading-relaxed" style="--d:300ms">
+      Tell us you&rsquo;d like to browse and we&rsquo;ll send a fresh link on WhatsApp, usually within the hour.
+    </p>
+    <a id="wa-catalog" class="reveal btn btn-lg bg-white text-neutral border-white hover:bg-accent hover:border-accent mt-8 sm:mt-10 px-6 sm:px-10" style="--d:400ms"
+       target="_blank" rel="noopener"
+       href="https://wa.me/918004439346?text=Hi%2C%20I%20would%20like%20a%20Srijan%20Sarees%20catalog%20link">
+      Request catalog<span class="hidden sm:inline">&nbsp;on WhatsApp</span>
+    </a>
+    <p class="reveal text-xs text-white/70 mt-6" style="--d:500ms">Already have a link? Open it directly to browse.</p>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section id="contact" class="py-16 sm:py-24 lg:py-28 px-6 text-center">
+  <div class="max-w-2xl mx-auto">
+    <p class="eyebrow reveal">Here to help</p>
+    <h2 class="reveal text-4xl mt-4 text-neutral" style="--d:100ms">Questions about a saree?</h2>
+    <p class="reveal mt-5 text-base-content/70" style="--d:200ms">We&rsquo;re happy to share more photos, fabric details and styling ideas.</p>
+    <a class="reveal discover mt-8" style="--d:300ms" target="_blank" rel="noopener"
+       href="https://wa.me/918004439346?text=Hi%2C%20I%20have%20a%20question%20about%20Srijan%20Sarees">Chat on WhatsApp</a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer footer-vertical sm:footer-horizontal bg-base-200 border-t border-base-300 px-8 py-14 lg:px-24 items-start">
+  <aside>
+    <img src="/logo-lockup.png" alt="Srijan Sarees" class="h-28 w-auto">
+    <p class="text-sm text-base-content/65 mt-2 max-w-xs">Exclusive silk sarees, chosen with care and shared personally.</p>
+  </aside>
+  <nav>
+    <p class="footer-title">Explore</p>
+    <a class="link link-hover" href="#collections">Collections</a>
+    <a class="link link-hover" href="#about">About Us</a>
+    <a class="link link-hover" href="#craft">Craft</a>
+    <a class="link link-hover" href="#how">How it works</a>
+  </nav>
+  <nav>
+    <p class="footer-title">Contact</p>
+    <a class="link link-hover" target="_blank" rel="noopener" href="https://wa.me/918004439346?text=Hi%2C%20I%20have%20a%20question%20about%20Srijan%20Sarees">WhatsApp</a>
+    <a class="link link-hover" href="#catalog">Request catalog</a>
+  </nav>
+</footer>
+<div class="bg-neutral text-neutral-content text-center text-[0.62rem] sm:text-[0.68rem] tracking-[0.14em] sm:tracking-[0.2em] uppercase py-4 px-4">
+  &copy; <span id="yr">2026</span> Srijan Sarees. All rights reserved.
+</div>
+
+<script>
+(function () {
+  document.getElementById('yr').textContent = new Date().getFullYear();
+
+  // Floating nav: lifts to the top edge once the page scrolls
+  var navWrap = document.getElementById('nav-wrap');
+  function onScroll() { navWrap.classList.toggle('scrolled', window.scrollY > 40); }
+  onScroll();
+  window.addEventListener('scroll', onScroll, { passive: true });
+
+  // Close the mobile menu after choosing a link
+  document.querySelectorAll('.dropdown .menu a').forEach(function (a) {
+    a.addEventListener('click', function () { if (document.activeElement) document.activeElement.blur(); });
+  });
+
+  // Scroll reveal
+  var els = document.querySelectorAll('.reveal, .reveal-img, .rule');
+  if (!('IntersectionObserver' in window)) { els.forEach(function (e) { e.classList.add('in'); }); return; }
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (en) {
+      if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); }
+    });
+  }, { threshold: 0.15, rootMargin: '0px 0px -8% 0px' });
+  els.forEach(function (e) { io.observe(e); });
+
+  // Gentle hero parallax
+  var par = document.querySelector('[data-parallax]');
+  if (par && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    window.addEventListener('scroll', function () {
+      var y = Math.min(window.scrollY, 600);
+      par.style.transform = 'translateY(' + (y * 0.08) + 'px)';
+    }, { passive: true });
+  }
+})();
+</script>
+</body>
+</html>

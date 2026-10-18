@@ -119,6 +119,14 @@
   .saree-img {
     width: 100%; height: 100%; object-fit: cover; display: block;
   }
+  .carousel-slide video.saree-img { object-fit: contain; background: #000; }
+  .video-tag {
+    position: absolute; bottom: 28px; left: 12px; z-index: 2; pointer-events: none;
+    background: rgba(26,18,9,0.75); color: var(--gold); border: 1px solid rgba(201,168,76,0.4);
+    font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; padding: 3px 8px; border-radius: 2px;
+    transition: opacity 0.2s;
+  }
+  .carousel-slide.playing .video-tag { opacity: 0; }
   .saree-img-placeholder {
     width: 100%; aspect-ratio: 3/4;
     background: var(--dark3);
@@ -298,6 +306,12 @@ function formatPrice(p) {
   return '₹' + Number(p).toLocaleString('en-IN');
 }
 
+function esc(str) {
+  return String(str ?? '').replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[c]));
+}
+
 async function init() {
   const params = new URLSearchParams(window.location.search);
   const token = params.get('token');
@@ -363,7 +377,11 @@ async function init() {
         );
         extraPhotos.forEach(p => {
           if (!extraPhotosMap[p.product_id]) extraPhotosMap[p.product_id] = [];
-          extraPhotosMap[p.product_id].push(p.photo_url);
+          extraPhotosMap[p.product_id].push({
+            url: p.photo_url,
+            type: p.media_type === 'video' ? 'video' : 'image',
+            poster: p.poster_url || null
+          });
         });
       } catch(e) {
         console.warn('Could not load extra photos', e);
@@ -401,34 +419,35 @@ async function init() {
       const waMsg = encodeURIComponent(`Hi, I am interested in "${s.saree_name}" (${s.fabric}, ${formatPrice(s.price_inr)}) from the Srijan Sarees catalog`);
       const cardId = `card-${s.product_id}`;
 
-      // Build photo list: primary first, then extras (max 4 total)
+      // Build media list: cover photo first, then extras in order.
+      // Caps: 4 photos (unchanged) and 2 videos per saree.
       const extras = extraPhotosMap[s.product_id] || [];
-      const allPhotos = s.photo_url ? [s.photo_url, ...extras] : extras;
-      const photos = allPhotos.slice(0, 4);
+      const allMedia = s.photo_url ? [{ url: s.photo_url, type: 'image', poster: null }, ...extras] : extras;
+      const counts = { image: 0, video: 0 };
+      const caps = { image: 4, video: 2 };
+      const media = allMedia.filter(m => counts[m.type]++ < caps[m.type]);
 
       let imageHtml;
-      if (photos.length === 0) {
+      if (media.length === 0) {
         imageHtml = `<div class="saree-img-placeholder">🪡</div>`;
-      } else if (photos.length === 1) {
-        imageHtml = `
-          <div class="carousel" id="${cardId}">
-            <div class="carousel-slide">
-              <img class="saree-img" src="${photos[0]}" alt="${s.saree_name}" loading="lazy">
-            </div>
-          </div>`;
       } else {
-        const slides = photos.map(url =>
-          `<div class="carousel-slide"><img class="saree-img" src="${url}" alt="${s.saree_name}" loading="lazy"></div>`
+        const slides = media.map(m => m.type === 'video'
+          ? `<div class="carousel-slide"><video class="saree-img" src="${esc(m.url)}" ${m.poster ? `poster="${esc(m.poster)}"` : ''} controls playsinline preload="${m.poster ? 'none' : 'metadata'}" controlslist="nodownload" aria-label="${esc(s.saree_name)} video" onplay="onVideoPlay(this)" onpause="onVideoStop(this)" onended="onVideoStop(this)"></video><span class="video-tag">▶ Video</span></div>`
+          : `<div class="carousel-slide"><img class="saree-img" src="${esc(m.url)}" alt="${esc(s.saree_name)}" loading="lazy"></div>`
         ).join('');
-        const dots = photos.map((_, di) =>
-          `<button class="carousel-dot ${di === 0 ? 'active' : ''}" onclick="goSlide('${cardId}',${di})"></button>`
-        ).join('');
-        imageHtml = `
-          <div class="carousel" id="${cardId}" onscroll="updateDots('${cardId}',${photos.length})">
+        if (media.length === 1) {
+          imageHtml = `<div class="carousel" id="${cardId}">${slides}</div>`;
+        } else {
+          const dots = media.map((_, di) =>
+            `<button class="carousel-dot ${di === 0 ? 'active' : ''}" onclick="goSlide('${cardId}',${di})"></button>`
+          ).join('');
+          imageHtml = `
+          <div class="carousel" id="${cardId}" onscroll="updateDots('${cardId}',${media.length})">
             ${slides}
           </div>
           <div class="carousel-dots">${dots}</div>
-          <div class="photo-count-tag">1 / ${photos.length}</div>`;
+          <div class="photo-count-tag">1 / ${media.length}</div>`;
+        }
       }
 
       return `
@@ -439,11 +458,11 @@ async function init() {
             ${!isAvailable ? `<div class="sold-overlay"><div class="sold-badge">SOLD</div></div>` : ''}
           </div>
           <div class="saree-info">
-            <div class="saree-fabric-tag">${s.fabric}</div>
-            <div class="saree-name">${s.saree_name}</div>
-            ${s.color ? `<div class="saree-color">${s.color}</div>` : ''}
-            ${s.weavers?.full_name ? `<div class="saree-weaver">By ${s.weavers.full_name}</div>` : ''}
-            ${s.notes ? `<div class="saree-color" style="font-style:italic;margin-bottom:12px;">${s.notes}</div>` : ''}
+            <div class="saree-fabric-tag">${esc(s.fabric)}</div>
+            <div class="saree-name">${esc(s.saree_name)}</div>
+            ${s.color ? `<div class="saree-color">${esc(s.color)}</div>` : ''}
+            ${s.weavers?.full_name ? `<div class="saree-weaver">By ${esc(s.weavers.full_name)}</div>` : ''}
+            ${s.notes ? `<div class="saree-color" style="font-style:italic;margin-bottom:12px;">${esc(s.notes)}</div>` : ''}
             <div class="saree-price-row">
               <div class="saree-price">${formatPrice(s.price_inr)}</div>
               ${isAvailable
@@ -483,6 +502,20 @@ function updateDots(cardId, total) {
   });
   const countTag = wrap.querySelector('.photo-count-tag');
   if (countTag) countTag.textContent = `${index + 1} / ${total}`;
+  // Pause any video that has been swiped out of view
+  carousel.querySelectorAll('.carousel-slide').forEach((slide, i) => {
+    const v = slide.querySelector('video');
+    if (v && i !== index && !v.paused) v.pause();
+  });
+}
+
+// Only one video plays at a time; hide the "Video" tag while playing
+function onVideoPlay(video) {
+  document.querySelectorAll('video').forEach(v => { if (v !== video && !v.paused) v.pause(); });
+  video.closest('.carousel-slide')?.classList.add('playing');
+}
+function onVideoStop(video) {
+  video.closest('.carousel-slide')?.classList.remove('playing');
 }
 
 init();
