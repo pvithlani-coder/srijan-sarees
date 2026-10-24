@@ -455,7 +455,7 @@ async function init() {
     const raw = tokens[0].product_ids;
     const curated = !!(raw && raw.trim());
     const ids = curated ? raw.split(',').map(s => s.trim()).filter(s => /^\d+$/.test(s)) : [];
-    const SELECT = 'product_id,saree_name,fabric,color,price_inr,photo_url,available,available_until,notes,weavers(full_name)';
+    const SELECT = 'product_id,saree_name,fabric,color,price_inr,photo_url,available,available_until,notes';
 
     let sarees;
     if (curated) {
@@ -584,7 +584,7 @@ function cardHtml(it, pos) {
         ${!it.isAvailable ? `<span class="sold-chip">Sold</span>` : ''}
       </div>`;
   }
-  const meta = [s.color, s.weavers?.full_name ? `By ${s.weavers.full_name}` : ''].filter(Boolean).map(esc).join(' &nbsp;·&nbsp; ');
+  const meta = esc(s.color || '');
   return `
     <article class="card-saree rise ${it.isAvailable ? '' : 'sold'}" data-id="${esc(s.product_id)}" style="--i:${Math.min(pos, 6)}">
       ${media}
