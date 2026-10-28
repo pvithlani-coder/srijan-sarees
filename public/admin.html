@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
 <title>Srijan Sarees Admin</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -658,9 +659,11 @@
     <div class="form-group">
       <label>Photos (up to 4 total)</label>
       <div class="photo-gallery" id="edit-photo-gallery"></div>
-      <input type="file" id="edit-extra-photo" accept="image/*" style="display:none" onchange="uploadExtraPhoto(this)">
+      <input type="file" id="edit-extra-photo" accept="image/*" multiple style="display:none" onchange="uploadExtraPhoto(this)">
       <input type="file" id="edit-extra-video" accept="video/mp4,video/webm,video/quicktime,video/*" style="display:none" onchange="uploadExtraVideo(this)">
       <div class="upload-progress" id="edit-video-progress"><div></div></div>
+      <div class="upload-progress" id="edit-photo-progress"><div></div></div>
+      <p class="photo-count-note" id="edit-upload-status" role="status" aria-live="polite"></p>
       <p class="photo-count-note" id="edit-photo-note"></p>
     </div>
     <button class="btn-primary" id="save-edit-btn" onclick="saveEdit()">Save Changes</button>
@@ -766,11 +769,13 @@ function esc(str) {
 }
 
 // ── TOAST ─────────────────────────────────────────────
+let toastTimer;
 function showToast(msg, type = 'success') {
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.className = 'toast show ' + type;
-  setTimeout(() => t.className = 'toast', 3000);
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.className = 'toast', type === 'error' ? 7000 : 3000);
 }
 
 // ── SUPABASE API ──────────────────────────────────────
@@ -810,20 +815,91 @@ async function sbPatch(table, id, data) {
   if (!r.ok) throw new Error(await r.text());
 }
 
-async function uploadPhoto(file) {
-  const ext = file.name.split('.').pop();
-  const fileName = 'saree_' + Date.now() + '.' + ext;
-  const r = await fetch(SUPABASE_URL + '/storage/v1/object/' + BUCKET + '/' + fileName, {
-    method: 'POST',
-    headers: {
-      'apikey': SUPABASE_KEY,
-      'Authorization': 'Bearer ' + SUPABASE_KEY,
-      'Content-Type': file.type
-    },
-    body: file
-  });
-  if (!r.ok) throw new Error(await r.text());
-  return SUPABASE_URL + '/storage/v1/object/public/' + BUCKET + '/' + fileName;
+// ── PHOTO UPLOAD (resize, retry, clear errors) ────────
+const PHOTO_MAX_EDGE = 1600;          // longest side after resizing
+const PHOTO_JPEG_QUALITY = 0.85;
+const PHOTO_SKIP_RESIZE_BYTES = 400 * 1024;
+const UPLOAD_RETRIES = 2;             // extra attempts after the first
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const fileLabel = f => `"${f.name || 'photo'}" (${(f.size / 1048576).toFixed(1)} MB${f.type ? ', ' + f.type : ''})`;
+
+// Phones can hand over a file they cannot actually open (for example a cloud-only
+// Google Photos copy). fetch/XHR then fail with a vague "Failed to fetch", so read
+// the bytes up front and explain the real problem.
+async function readFileBytes(file, probeOnly) {
+  try {
+    return await (probeOnly ? file.slice(0, 1024) : file).arrayBuffer();
+  } catch (e) {
+    throw new Error(`Couldn't read ${fileLabel(file)} from this device. If it is stored in Google Photos or another cloud gallery, open it in your gallery first or choose a copy saved on the phone.`);
+  }
+}
+
+// Shrink big camera photos before upload: faster on mobile data, lighter catalog pages.
+async function prepareImage(file) {
+  const bytes = await readFileBytes(file);
+  const type = file.type || 'image/jpeg';
+  const original = { blob: new Blob([bytes], { type }), type, ext: (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg' };
+  try {
+    let bmp;
+    try { bmp = await createImageBitmap(original.blob, { imageOrientation: 'from-image' }); }
+    catch { bmp = await createImageBitmap(original.blob); }
+    const scale = Math.min(1, PHOTO_MAX_EDGE / Math.max(bmp.width, bmp.height));
+    if (scale === 1 && file.size <= PHOTO_SKIP_RESIZE_BYTES && /^image\/jpe?g$/.test(type)) { bmp.close?.(); return original; }
+    const c = document.createElement('canvas');
+    c.width = Math.max(1, Math.round(bmp.width * scale));
+    c.height = Math.max(1, Math.round(bmp.height * scale));
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);   // PNG transparency -> white
+    ctx.drawImage(bmp, 0, 0, c.width, c.height);
+    bmp.close?.();
+    const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', PHOTO_JPEG_QUALITY));
+    if (blob && (scale < 1 || blob.size < file.size)) return { blob, type: 'image/jpeg', ext: 'jpg' };
+    return original;
+  } catch (e) {
+    if (/hei[cf]/i.test(type + ' ' + file.name)) {
+      throw new Error(`${fileLabel(file)} is an HEIC photo, which this browser can't convert. Please choose a JPG/PNG copy (or set the phone camera to "Most compatible").`);
+    }
+    if (file.size <= 12 * 1048576) return original;     // could not decode; send as-is
+    throw new Error(`Couldn't process ${fileLabel(file)}. Please choose a JPG or PNG photo.`);
+  }
+}
+
+function explainUploadError(e, file) {
+  let reason = e.message || 'Unknown error';
+  if (e.network) reason = 'the connection was interrupted. Check your internet and try again';
+  else if (e.status === 413) reason = 'the file is too large for the server';
+  else {
+    try { const j = JSON.parse(reason); reason = j.message || j.error || reason; } catch {}
+  }
+  return `Couldn't upload ${fileLabel(file)}: ${reason}.`;
+}
+
+// Resizes, uploads with retries and returns the public URL
+async function uploadPhoto(file, onProgress) {
+  const prepared = await prepareImage(file);
+  let lastErr;
+  for (let attempt = 0; attempt <= UPLOAD_RETRIES; attempt++) {
+    const name = `saree_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${prepared.ext}`;
+    try {
+      return await uploadFileWithProgress(prepared.blob, name, prepared.type, onProgress, 90000);
+    } catch (e) {
+      lastErr = e;
+      const retryable = e.network || e.status >= 500 || e.status === 408 || e.status === 429 || e.status === 409;
+      if (!retryable || attempt === UPLOAD_RETRIES) break;
+      await sleep(1000 * (attempt + 1));
+    }
+  }
+  throw new Error(explainUploadError(lastErr, file));
+}
+
+// Best-effort cleanup when a file was stored but its database row could not be saved
+function deleteStoredFile(url) {
+  const name = url.split('/' + BUCKET + '/')[1];
+  if (!name) return;
+  fetch(SUPABASE_URL + '/storage/v1/object/' + BUCKET + '/' + name, {
+    method: 'DELETE', headers: { apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY }
+  }).catch(() => {});
 }
 
 // ── VIDEO HELPERS ─────────────────────────────────────
@@ -839,9 +915,10 @@ function validateVideoFile(file) {
 }
 
 // Upload with progress (fetch cannot report upload progress)
-function uploadFileWithProgress(file, fileName, contentType, onProgress) {
+function uploadFileWithProgress(file, fileName, contentType, onProgress, timeoutMs = 0) {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
+    if (timeoutMs) xhr.timeout = timeoutMs;
     xhr.open('POST', SUPABASE_URL + '/storage/v1/object/' + BUCKET + '/' + fileName);
     xhr.setRequestHeader('apikey', SUPABASE_KEY);
     xhr.setRequestHeader('Authorization', 'Bearer ' + SUPABASE_KEY);
@@ -849,8 +926,10 @@ function uploadFileWithProgress(file, fileName, contentType, onProgress) {
     if (onProgress) xhr.upload.onprogress = e => { if (e.lengthComputable) onProgress(e.loaded / e.total); };
     xhr.onload = () => (xhr.status >= 200 && xhr.status < 300)
       ? resolve(SUPABASE_URL + '/storage/v1/object/public/' + BUCKET + '/' + fileName)
-      : reject(new Error(xhr.responseText || ('Upload failed (' + xhr.status + ')')));
-    xhr.onerror = () => reject(new Error('Network error while uploading'));
+      : reject(Object.assign(new Error(xhr.responseText || ('Upload failed (' + xhr.status + ')')), { status: xhr.status }));
+    xhr.onerror = () => reject(Object.assign(new Error('Network error while uploading'), { network: true }));
+    xhr.ontimeout = () => reject(Object.assign(new Error('Upload timed out'), { network: true }));
+    xhr.onabort = () => reject(Object.assign(new Error('Upload cancelled'), { network: true }));
     xhr.send(file);
   });
 }
@@ -1199,9 +1278,11 @@ async function loadWeaverDropdown() {
 }
 
 // ── PHOTO PREVIEW ─────────────────────────────────────
-function previewPhoto(input) {
+async function previewPhoto(input) {
   const file = input.files[0];
   if (!file) return;
+  try { await readFileBytes(file, true); }
+  catch (e) { showToast(e.message, 'error'); input.value = ''; return; }
   const preview = document.getElementById('photo-preview');
   preview.src = URL.createObjectURL(file);
   preview.style.display = 'block';
@@ -1465,7 +1546,7 @@ function renderEditPhotos() {
   if (photoCount < MAX_PHOTOS) {
     gallery.innerHTML += `
       <div class="add-photo-btn" onclick="document.getElementById('edit-extra-photo').click()">
-        📷<span>Photo</span>
+        📷<span>Photos</span>
       </div>`;
   }
   if (videoCount < MAX_VIDEOS) {
@@ -1484,27 +1565,61 @@ function nextSortOrder() {
   return editPhotos.reduce((m, p) => Math.max(m, p.sort_order || 0), 0) + 1;
 }
 
-async function uploadExtraPhoto(input) {
-  const file = input.files[0];
-  if (!file) return;
-  if (editPhotos.filter(p => p.media_type !== 'video').length >= MAX_PHOTOS) { showToast('Maximum ' + MAX_PHOTOS + ' photos', 'error'); input.value = ''; return; }
+let extraUploading = false;
 
-  showToast('Uploading...', 'success');
-  try {
-    const url = await uploadPhoto(file);
-    const nextOrder = nextSortOrder();
-    const rows = await sbPost('saree_photos', {
-      product_id: parseInt(editCurrentProductId),
-      photo_url: url,
-      sort_order: nextOrder
-    });
-    editPhotos.push({ photo_id: rows[0].photo_id, photo_url: url, poster_url: null, media_type: 'image', sort_order: nextOrder, is_primary: false });
-    renderEditPhotos();
-    showToast('✅ Photo added!', 'success');
-  } catch(e) {
-    showToast('Error: ' + e.message, 'error');
+async function uploadExtraPhoto(input) {
+  const files = [...input.files];       // copy before the input is cleared
+  if (!files.length) return;
+  if (extraUploading) { showToast('Please wait — photos are still uploading', 'error'); input.value = ''; return; }
+
+  const slots = MAX_PHOTOS - editPhotos.filter(p => p.media_type !== 'video').length;
+  if (slots <= 0) { showToast('Maximum ' + MAX_PHOTOS + ' photos', 'error'); input.value = ''; return; }
+  const batch = files.slice(0, slots);
+  const skipped = files.length - batch.length;
+
+  const status = document.getElementById('edit-upload-status');
+  const addBtn = document.querySelector('#edit-photo-gallery .add-photo-btn:not(.add-video-btn)');
+  extraUploading = true;
+  if (addBtn) addBtn.style.opacity = '.5';
+  status.style.color = ''; status.textContent = '';
+
+  let added = 0;
+  const failures = [];
+  for (let i = 0; i < batch.length; i++) {
+    const f = batch[i];
+    status.textContent = batch.length > 1 ? `Uploading photo ${i + 1} of ${batch.length}…` : 'Uploading photo…';
+    setProgress('edit-photo-progress', i / batch.length);
+    try {
+      if (!/^image\//.test(f.type) && !/\.(jpe?g|png|webp|gif|heic|heif)$/i.test(f.name)) throw new Error(`${fileLabel(f)} is not a photo.`);
+      const url = await uploadPhoto(f, frac => setProgress('edit-photo-progress', (i + frac) / batch.length));
+      const order = nextSortOrder();
+      let rows;
+      try {
+        rows = await sbPost('saree_photos', { product_id: parseInt(editCurrentProductId), photo_url: url, sort_order: order });
+      } catch (dbErr) {
+        deleteStoredFile(url);
+        throw new Error(`Uploaded ${fileLabel(f)} but couldn't save it: ${dbErr.message}`);
+      }
+      editPhotos.push({ photo_id: rows[0].photo_id, photo_url: url, poster_url: null, media_type: 'image', sort_order: order, is_primary: false });
+      renderEditPhotos();
+      added++;
+    } catch (e) {
+      failures.push(e.message);
+    }
   }
+  setProgress('edit-photo-progress', null);
+  extraUploading = false;
   input.value = '';
+
+  const skipNote = skipped ? ` ${skipped} not added (4 photo limit).` : '';
+  if (!failures.length) {
+    status.textContent = '';
+    showToast(`✅ ${added} photo${added !== 1 ? 's' : ''} added!${skipNote}`, 'success');
+  } else {
+    status.style.color = '#c0392b';
+    status.textContent = failures.join(' ');
+    showToast(`⚠️ ${added} added, ${failures.length} failed. ${failures[0]}`, 'error');
+  }
 }
 
 async function uploadExtraVideo(input) {
