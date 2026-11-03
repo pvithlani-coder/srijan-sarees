@@ -18,6 +18,11 @@
   to = "/admin.html"
   status = 200
 
+[[redirects]]
+  from = "/requestcatalog"
+  to = "https://wa.me/918004439346?text=Hi%2C%20I%20would%20like%20a%20Srijan%20Sarees%20catalog%20link"
+  status = 301
+  
 # Security headers for all pages
 [[headers]]
   for = "/*"
