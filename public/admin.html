@@ -185,6 +185,14 @@
     align-items: center; justify-content: center;
     font-size: 20px; font-weight: 700; flex-shrink: 0;
   }
+  .weaver-info { flex: 1; min-width: 0; }
+  .weaver-card.inactive { opacity: .6; }
+  .weaver-edit-btn {
+    background: #f4efe6; color: #6B0F2B; border: none; border-radius: 8px;
+    padding: 8px 14px; font-size: 13px; font-weight: 600; cursor: pointer; flex-shrink: 0;
+  }
+  .weaver-edit-btn:hover { background: #6B0F2B; color: white; }
+  .badge-inactive { display: inline-block; font-size: 11px; background: #eee; color: #777; border-radius: 6px; padding: 2px 7px; margin-left: 6px; font-weight: 600; vertical-align: middle; }
   .weaver-info h3 { font-size: 15px; font-weight: 700; color: #222; }
   .weaver-info p { font-size: 13px; color: #666; margin-top: 2px; }
 
@@ -671,6 +679,40 @@
   </div>
 </div>
 
+<!-- EDIT WEAVER MODAL -->
+<div class="modal-overlay" id="edit-weaver-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Edit Weaver</h2>
+      <button class="modal-close" onclick="closeEditWeaverModal()">✕</button>
+    </div>
+    <input type="hidden" id="edit-weaver-id">
+    <div class="form-group">
+      <label>Full Name *</label>
+      <input type="text" id="edit-weaver-name" placeholder="e.g. Ramesh Kumar">
+    </div>
+    <div class="form-group">
+      <label>WhatsApp Number *</label>
+      <input type="tel" id="edit-weaver-phone" placeholder="e.g. 9876543210">
+    </div>
+    <div class="form-group">
+      <label>City / Region</label>
+      <input type="text" id="edit-weaver-city" placeholder="e.g. Varanasi, UP">
+    </div>
+    <div class="form-group">
+      <label>Speciality</label>
+      <input type="text" id="edit-weaver-speciality" placeholder="e.g. Banarasi Silk, Zari work">
+    </div>
+    <div class="form-group">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+        <input type="checkbox" id="edit-weaver-active" style="width:auto;margin:0;"> Active weaver
+      </label>
+      <small style="color:#888;font-size:12px;margin-top:4px;display:block;">Untick if you no longer work with this weaver. Their sarees stay in the catalog.</small>
+    </div>
+    <button class="btn-primary" id="save-weaver-edit-btn" onclick="saveWeaverEdit()">Save Changes</button>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
@@ -813,6 +855,21 @@ async function sbPatch(table, id, data) {
     body: JSON.stringify(data)
   });
   if (!r.ok) throw new Error(await r.text());
+}
+
+async function sbPatchBy(table, column, value, data) {
+  const r = await fetch(SUPABASE_URL + '/rest/v1/' + table + '?' + column + '=eq.' + encodeURIComponent(value), {
+    method: 'PATCH',
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': 'Bearer ' + SUPABASE_KEY,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=representation'
+    },
+    body: JSON.stringify(data)
+  });
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
 }
 
 // ── PHOTO UPLOAD (resize, retry, clear errors) ────────
@@ -1665,6 +1722,60 @@ async function deleteExtraPhoto(photoId) {
   }
 }
 
+// ── EDIT WEAVER ───────────────────────────────────────
+let weaversCache = [];
+
+function openEditWeaverModal(id) {
+  const w = weaversCache.find(x => Number(x.weaver_id) === Number(id));
+  if (!w) return showToast('Weaver not found. Tap Refresh and try again.', 'error');
+  document.getElementById('edit-weaver-id').value = w.weaver_id;
+  document.getElementById('edit-weaver-name').value = w.full_name || '';
+  document.getElementById('edit-weaver-phone').value = w.whatsapp_number || '';
+  document.getElementById('edit-weaver-city').value = w.region || '';
+  document.getElementById('edit-weaver-speciality').value = w.speciality || '';
+  document.getElementById('edit-weaver-active').checked = w.active !== false;
+  document.getElementById('edit-weaver-modal').classList.add('open');
+}
+
+function closeEditWeaverModal() {
+  document.getElementById('edit-weaver-modal').classList.remove('open');
+}
+
+async function saveWeaverEdit() {
+  const id = document.getElementById('edit-weaver-id').value;
+  const name = document.getElementById('edit-weaver-name').value.trim();
+  const phone = document.getElementById('edit-weaver-phone').value.trim();
+  const city = document.getElementById('edit-weaver-city').value.trim();
+  const speciality = document.getElementById('edit-weaver-speciality').value.trim();
+  const active = document.getElementById('edit-weaver-active').checked;
+
+  if (!name) return showToast('Please enter weaver name', 'error');
+  if (!phone) return showToast('Please enter WhatsApp number', 'error');
+
+  const btn = document.getElementById('save-weaver-edit-btn');
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
+  try {
+    const res = await sbPatchBy('weavers', 'weaver_id', id, {
+      full_name: name,
+      whatsapp_number: phone,
+      region: city || null,
+      speciality: speciality || null,
+      active
+    });
+    if (!res.length) throw new Error('No weaver was updated. Check the Supabase update policy on the weavers table.');
+    showToast('✅ Weaver updated!', 'success');
+    closeEditWeaverModal();
+    await loadWeaverDropdown();
+    loadWeavers();
+    if (typeof loadListings === 'function') loadListings();
+  } catch(e) {
+    showToast('Error: ' + e.message, 'error');
+  }
+  btn.disabled = false;
+  btn.textContent = 'Save Changes';
+}
+
 // ── LOAD WEAVERS ──────────────────────────────────────
 async function loadWeavers() {
   const container = document.getElementById('weavers-container');
@@ -1675,15 +1786,17 @@ async function loadWeavers() {
       container.innerHTML = '<div class="empty">No weavers added yet.</div>';
       return;
     }
+    weaversCache = rows;
     container.innerHTML = rows.map(w => `
-      <div class="weaver-card">
+      <div class="weaver-card ${w.active === false ? 'inactive' : ''}">
         <div class="weaver-avatar">${esc(w.full_name.charAt(0).toUpperCase())}</div>
         <div class="weaver-info">
-          <h3>${esc(w.full_name)}</h3>
+          <h3>${esc(w.full_name)}${w.active === false ? '<span class="badge-inactive">Inactive</span>' : ''}</h3>
           <p>📱 ${esc(w.whatsapp_number)}</p>
           ${w.region ? `<p>📍 ${esc(w.region)}</p>` : ''}
           ${w.speciality ? `<p>🧵 ${esc(w.speciality)}</p>` : ''}
         </div>
+        <button class="weaver-edit-btn" onclick="openEditWeaverModal(${Number(w.weaver_id)})">✏️ Edit</button>
       </div>
     `).join('');
   } catch(e) {
